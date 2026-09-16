@@ -346,13 +346,6 @@ onBeforeUnmount(() => {
           </svg>
           <span>{{ t('settings.accountsHeading') }}</span>
         </button>
-        <button type="button" class="nav-item" :class="{ active: active === 'api' }" @click="active = 'api'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12" />
-          </svg>
-          <span>{{ t('settings.apiHeading') }}</span>
-        </button>
-
         <button type="button" class="nav-item nav-item-footer" :class="{ active: active === 'about' }" @click="active = 'about'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="12" r="9" />
@@ -626,14 +619,6 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-else-if="active === 'api'" class="field-group">
-          <div class="section-heading-row">
-            <h4>{{ t('settings.apiHeading') }}</h4>
-            <span class="tag">{{ t('settings.comingSoonBadge') }}</span>
-          </div>
-          <p class="hint">{{ t('settings.apiHint') }}</p>
-        </div>
-
         <div v-else-if="active === 'about'" class="field-group about-panel">
           <h4 class="about-title">{{ t('app.name') }}</h4>
           <img src="/branding/about-artwork.webp" alt="" class="about-artwork" />
@@ -684,15 +669,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: var(--text);
   word-break: break-all;
-}
-.section-heading-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-.section-heading-row h4 {
-  margin: 0;
 }
 .active-tag {
   color: var(--mineral);
