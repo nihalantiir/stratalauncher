@@ -8,6 +8,9 @@
   --surface-raised: rgba(30, 34, 45, 0.58);
   --surface-strong: rgba(18, 20, 27, 0.82);
   --surface-inset: rgba(4, 5, 9, 0.5);
+  /* Near-opaque, not glass: for floating overlays (dropdowns, menus, the
+     save-bar) that sit over arbitrary busy content and need to stay legible. */
+  --surface-overlay: rgba(16, 18, 24, 0.97);
 
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.2);

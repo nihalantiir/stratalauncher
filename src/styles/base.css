@@ -1120,9 +1120,7 @@ button {
 
 /* No backdrop-filter (see the note above .panel): every dropdown (version/
    loader pickers, sort, language, log file, account menu, notifications,
-   instance switcher) is v-if-toggled, a fresh element every single open, and
-   opened far more often than pages are navigated. --surface-strong alone
-   (already the most opaque tier) reads fine without blur. */
+   instance switcher) is v-if-toggled and opened far more than pages navigate. */
 .dropdown {
   position: absolute;
   /* A real gap below whichever trigger opened it, not a hardcoded pixel
@@ -1133,7 +1131,7 @@ button {
   top: calc(100% + 10px);
   right: 0;
   width: 320px;
-  background: var(--surface-strong);
+  background: var(--surface-overlay);
   border: 1px solid var(--border-strong);
   border-radius: 14px;
   box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
@@ -1958,11 +1956,7 @@ label.field-label {
   min-width: 140px;
   max-width: 260px;
   padding: 6px;
-  /* Floats over anything: video background, screenshots, world icons, so
-     the usual glass alpha (--surface-strong is only 0.82) isn't legible
-     enough here. Near-opaque override, same base color as the rest of the
-     glass language. */
-  background: rgba(16, 18, 24, 0.97);
+  background: var(--surface-overlay);
 }
 .context-menu-item {
   display: flex;
@@ -2018,10 +2012,7 @@ label.field-label {
 .app-tooltip {
   position: fixed;
   z-index: 200;
-  /* Same reasoning as .context-menu's own override just above: this floats
-     over arbitrary content, so it needs to read as near-opaque rather than
-     the usual glass alpha. */
-  background: rgba(16, 18, 24, 0.97);
+  background: var(--surface-overlay);
   border: 1px solid var(--border-strong);
   border-radius: 7px;
   padding: 5px 9px;
@@ -3157,7 +3148,7 @@ input[type='range'] {
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-strong);
+  background: var(--surface-overlay);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   max-width: min(480px, calc(100% - 60px));
 }
