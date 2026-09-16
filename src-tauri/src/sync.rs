@@ -166,10 +166,8 @@ pub fn update_check_due(interval_hours: u32) -> bool {
     elapsed.num_hours() >= interval_hours as i64
 }
 
-/// Same manifest/checksum path the Settings page's on-demand "Check for
-/// Updates" button uses (`commands::updater::fetch_update_info`), so a
-/// background-found update and a manually-checked one are never two
-/// different answers. Callable standalone or as part of `run_sync_check`.
+/// Same manifest/checksum path the Settings page's manual check uses, so a
+/// background-found update and a manual one are never two different answers.
 pub async fn check_launcher_update(client: &reqwest::Client) -> AppResult<()> {
     let mut state = load_state();
     let now = chrono::Utc::now().to_rfc3339();

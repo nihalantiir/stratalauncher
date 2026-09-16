@@ -93,10 +93,8 @@ fn old_path_for(target_exe: &Path) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// Renames target_exe -> target_exe.old, then new_exe -> target_exe, retrying
-/// the whole pair on failure since a fresh AV/indexer lock on a just-exited
-/// exe is transient. If the first rename succeeds but the second fails, the
-/// target rename is rolled back so the app is never left without an exe.
+/// Renames target_exe aside, moves new_exe into place, retrying since a
+/// fresh file lock is transient; rolls back if the second rename fails.
 fn swap_files(new_exe: &Path, target_exe: &Path) -> Result<(), String> {
     let old_exe = old_path_for(target_exe);
     const MAX_ATTEMPTS: u32 = 10;

@@ -16,9 +16,8 @@ pub fn curseforge_api_key() -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-/// GitHub repo ("owner/repo") releases and repo-hosted data (the cape
-/// catalog, the update manifest) are fetched from. Env var override is for
-/// testing against a fork; not a secret, no build-time path needed.
+/// GitHub repo ("owner/repo") releases and repo-hosted data (cape catalog,
+/// update manifest) are fetched from; env var override is for testing a fork.
 pub fn update_repo() -> Option<String> {
     Some(std::env::var("STRATA_UPDATE_REPO").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| "nihalantiir/stratalauncher".to_string()))
 }

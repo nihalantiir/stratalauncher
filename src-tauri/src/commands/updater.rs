@@ -1,6 +1,5 @@
-//! Self-update: checks the GitHub release manifest, and on demand downloads
-//! + verifies the new build, then hands off to `strata-updater.exe` (see
-//! `updater/`, built and owned separately) to swap the exe and relaunch.
+//! Self-update: checks the GitHub release manifest, downloads and verifies
+//! a new build on demand, then hands off to `strata-updater.exe` to swap it in.
 
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
@@ -51,9 +50,8 @@ fn is_newer(candidate: &str, current: &str) -> bool {
     false
 }
 
-/// Shared by the on-demand Settings command below and the periodic
-/// background check in `sync.rs`, so both ever only know one way to decide
-/// "is there a real update" (fixed manifest URL, real semver-ish compare).
+/// Shared by the Settings page's manual check and the periodic background
+/// check in `sync.rs`, so both can never disagree on "is there an update."
 pub async fn fetch_update_info(client: &reqwest::Client) -> AppResult<Option<UpdateInfo>> {
     let manifest: Manifest = client.get(manifest_url()).send().await?.error_for_status()?.json().await?;
     let current = env!("CARGO_PKG_VERSION");

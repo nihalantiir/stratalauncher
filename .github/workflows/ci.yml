@@ -11,9 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Cheap, fast job on a Linux runner: decides which of the three real
-  # checks below are worth paying for. A docs-only commit (README, LICENSE,
-  # NOTICE files) touches none of these paths and skips every build.
+  # Cheap Linux job deciding which of the three real checks are worth
+  # paying for; a docs-only commit skips every build.
   changes:
     runs-on: ubuntu-latest
     outputs:
