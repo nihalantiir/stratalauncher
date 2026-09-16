@@ -93,8 +93,7 @@ pub fn run() {
             });
 
             // Background videos aren't bundled into the exe; fetch them once,
-            // silently, the first time they're missing. The UI falls back to
-            // a static panorama until this finishes.
+            // silently, the first time they're missing.
             let app_for_media = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let state = app_for_media.state::<AppState>();

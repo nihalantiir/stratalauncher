@@ -28,9 +28,8 @@ const VIDEOS = [
 ];
 const CROSSFADE_MS = 900;
 
-// Not bundled into the exe; downloaded once in the background (see
-// commands::media on the backend). Until they land, a static embedded
-// panorama fills in instead of a blank background.
+// Downloaded once in the background (see commands::media); a static
+// panorama fills in until real videos land.
 const mediaReady = ref(false);
 const mediaDir = ref('');
 const fallbackImage = DEFAULT_PANORAMAS[Math.floor(Math.random() * DEFAULT_PANORAMAS.length)];
@@ -38,7 +37,8 @@ const downloadPercent = ref(0);
 let unlistenProgress = null;
 
 function srcFor(name) {
-  return convertFileSrc(`${mediaDir.value}/${name}.mp4`);
+  const dir = mediaDir.value.replace(/\\/g, '/').replace(/\/$/, '');
+  return convertFileSrc(`${dir}/${name}.mp4`);
 }
 
 const videoA = ref(null);
@@ -92,10 +92,10 @@ function playActive() {
 }
 
 onMounted(async () => {
-  const status = await getMediaStatus().catch(() => ({ ready: false, dir: '' }));
-  mediaDir.value = status.dir;
-  mediaReady.value = status.ready;
-  if (status.ready) playActive();
+  // dir is set before the listener below can ever fire, so a completion
+  // event arriving mid-setup still has a real path to build from.
+  const first = await getMediaStatus().catch(() => ({ ready: false, dir: '' }));
+  mediaDir.value = first.dir;
 
   unlistenProgress = await listen('download://progress', (event) => {
     const p = event.payload;
@@ -106,6 +106,14 @@ onMounted(async () => {
       playActive();
     }
   });
+
+  // Covers the download finishing before this component ever mounted, or
+  // in the brief window before the listener above was registered.
+  const recheck = await getMediaStatus().catch(() => ({ ready: false }));
+  if (recheck.ready) {
+    mediaReady.value = true;
+    playActive();
+  }
 });
 
 onBeforeUnmount(() => {

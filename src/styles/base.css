@@ -2924,16 +2924,9 @@ input[type='range'] {
 .wizard-mark {
   width: 56px;
   height: 56px;
-  border-radius: 14px;
-  background: linear-gradient(155deg, var(--ore), var(--danger));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1b1204;
-  font-weight: 800;
-  font-size: 24px;
+  display: block;
   margin: 0 auto 20px;
-  box-shadow: 0 8px 24px rgba(232, 163, 61, 0.4);
+  filter: drop-shadow(0 8px 24px rgba(232, 163, 61, 0.4));
 }
 .wizard-card h1 {
   font-family: var(--font-mc);

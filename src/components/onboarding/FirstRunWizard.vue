@@ -24,7 +24,7 @@ function finish() {
   <div class="wizard-backdrop">
     <div class="wizard-card">
       <template v-if="step === 'welcome'">
-        <div class="wizard-mark">S</div>
+        <img class="wizard-mark" src="/grass-block.png" alt="" />
         <h1>{{ t('wizard.welcomeTitle') }}</h1>
         <p class="wizard-sub">{{ t('wizard.welcomeBody') }}</p>
         <button class="btn btn-mineral btn-block" type="button" style="margin-top: 22px" @click="startSignIn">
