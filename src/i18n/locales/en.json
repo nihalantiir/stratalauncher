@@ -427,6 +427,13 @@
     "aboutHeading": "About",
     "versionLabel": "Version {version}",
     "authorLabel": "Created by {author}",
+    "updateCheck": "Check for Updates",
+    "updateChecking": "Checking for updates…",
+    "updateUpToDate": "You're on the latest version.",
+    "updateAvailable": "Version {version} is available.",
+    "updateInstallButton": "Install and Restart",
+    "updateInstalling": "Downloading update…",
+    "updateError": "Could not check for updates. Check your connection and try again.",
     "disclosureLine1": "Strata Launcher is not an official Minecraft product. It is not approved by or associated with Mojang or Microsoft.",
     "disclosureLine2": "All sign-in, skins, capes, and account data are handled directly by Mojang and Microsoft. Strata runs no servers of its own and never stores your data anywhere but your own device."
   },

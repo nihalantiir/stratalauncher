@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { open } from '@tauri-apps/plugin-dialog';
+import { listen } from '@tauri-apps/api/event';
 import { useLocale } from '../composables/useLocale';
 import { useAccessibility } from '../composables/useAccessibility';
 import { useDensity } from '../composables/useDensity';
@@ -13,6 +14,7 @@ import GlassSelect from '../components/common/GlassSelect.vue';
 import LoginModal from '../components/auth/LoginModal.vue';
 import SkinHead from '../components/common/SkinHead.vue';
 import { getAppSettings, updateAppSettings, getDataDirInfo, setPendingDataDir, resetDataDir } from '../api/appSettings';
+import { checkForUpdate, installUpdate } from '../api/updater';
 import pkg from '../../package.json';
 
 const { t } = useI18n();
@@ -203,11 +205,59 @@ function removeAccount(id, event) {
   accounts.remove(id);
 }
 
+// ---- Self-update (About panel) ----
+const updateState = ref('idle'); // idle | checking | upToDate | available | error
+const updateInfo = ref(null);
+const installing = ref(false);
+const installError = ref(null);
+const installProgress = ref(null);
+let unlistenUpdateProgress = null;
+
+const installProgressPercent = computed(() => {
+  const p = installProgress.value;
+  if (!p || !p.total) return 0;
+  return Math.round((p.completed / p.total) * 100);
+});
+
+async function checkUpdate() {
+  updateState.value = 'checking';
+  try {
+    const info = await checkForUpdate();
+    updateInfo.value = info;
+    updateState.value = info ? 'available' : 'upToDate';
+  } catch {
+    updateState.value = 'error';
+  }
+}
+
+async function doInstallUpdate() {
+  if (!updateInfo.value) return;
+  installing.value = true;
+  installError.value = null;
+  installProgress.value = null;
+  try {
+    await installUpdate(updateInfo.value);
+  } catch (e) {
+    installError.value = String(e);
+  } finally {
+    installing.value = false;
+  }
+}
+
 onMounted(async () => {
   loadSettings();
   loadDataDirInfo();
   accounts.refresh();
   availableUploadTargets.value = await listUploadTargets();
+  unlistenUpdateProgress = await listen('download://progress', (event) => {
+    const p = event.payload;
+    if (p.stage !== 'update') return;
+    installProgress.value = p;
+  });
+});
+
+onBeforeUnmount(() => {
+  unlistenUpdateProgress?.();
 });
 </script>
 
@@ -559,6 +609,31 @@ onMounted(async () => {
             <span class="about-sep" aria-hidden="true">•</span>
             <span>{{ t('settings.authorLabel', { author: 'Nihalantiir' }) }}</span>
           </div>
+          <div class="about-update">
+            <button v-if="updateState === 'idle'" class="btn btn-ghost" type="button" @click="checkUpdate">
+              {{ t('settings.updateCheck') }}
+            </button>
+
+            <div v-else-if="updateState === 'checking'" class="hint about-update-row">
+              <span class="spinner"></span>
+              {{ t('settings.updateChecking') }}
+            </div>
+
+            <p v-else-if="updateState === 'upToDate'" class="hint">{{ t('settings.updateUpToDate') }}</p>
+
+            <p v-else-if="updateState === 'error'" class="hint">{{ t('settings.updateError') }}</p>
+
+            <div v-else-if="updateState === 'available'">
+              <p class="hint">{{ t('settings.updateAvailable', { version: updateInfo?.version }) }}</p>
+              <button class="btn btn-mineral" type="button" :disabled="installing" @click="doInstallUpdate">
+                <span v-if="installing" class="spinner"></span>
+                {{ installing ? t('settings.updateInstalling') : t('settings.updateInstallButton') }}
+              </button>
+              <p v-if="installing && installProgress" class="hint">{{ installProgressPercent }}%</p>
+              <div v-if="installError" class="error-box" style="margin-top: 10px">{{ installError }}</div>
+            </div>
+          </div>
+
           <div class="about-disclosure">
             <p>{{ t('settings.disclosureLine1') }}</p>
             <p>{{ t('settings.disclosureLine2') }}</p>
@@ -615,5 +690,14 @@ onMounted(async () => {
   font-weight: 500;
   font-size: 12px;
   margin-left: 6px;
+}
+.about-update {
+  margin-bottom: 24px;
+}
+.about-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 </style>

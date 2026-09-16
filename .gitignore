@@ -33,6 +33,7 @@ Thumbs.db
 # Rust build output (also holds the dev .env with real API keys, see
 # src-tauri/src/config.rs)
 src-tauri/target
+updater/target
 
 # Real API keys for release builds, baked in at compile time by build.rs.
 # Never commit this — see src-tauri/secrets.release.env.example.

@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+            updater -> target
+
+      - name: Build main app
+        run: cargo build --release --manifest-path src-tauri/Cargo.toml
+
+      - name: Build updater
+        run: cargo build --release --manifest-path updater/Cargo.toml
+
+      - name: Assemble release archive
+        id: assemble
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $staging = "strata-${{ github.ref_name }}-windows-x64"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item src-tauri/target/release/strata.exe "$staging/strata.exe"
+          Copy-Item updater/target/release/strata-updater.exe "$staging/strata-updater.exe"
+          Copy-Item LICENSE "$staging/LICENSE"
+          Copy-Item README.md "$staging/README.md"
+          $zipName = "$staging.zip"
+          Compress-Archive -Path "$staging/*" -DestinationPath $zipName
+          $hash = (Get-FileHash -Algorithm SHA256 $zipName).Hash.ToLower()
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Write latest.json
+        shell: pwsh
+        run: |
+          $notes = git tag -l --format='%(contents)' "${{ github.ref_name }}"
+          if ([string]::IsNullOrWhiteSpace($notes)) { $notes = "" }
+          $manifest = @{
+            version = "${{ steps.assemble.outputs.version }}"
+            notes = $notes
+            windows = @{
+              url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.assemble.outputs.zip_name }}"
+              sha256 = "${{ steps.assemble.outputs.sha256 }}"
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path latest.json -Encoding utf8
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "${{ steps.assemble.outputs.zip_name }}" `
+            "latest.json" `
+            --title "${{ github.ref_name }}" `
+            --generate-notes

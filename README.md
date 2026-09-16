@@ -15,8 +15,10 @@ install required, no account beyond your own Microsoft sign-in.
 
 Not affiliated with Mojang or Microsoft. Minecraft is a trademark of
 Mojang Synergies AB. Strata uses only official Mojang/Minecraft assets
-(fonts, panoramas, version data) under their own published licenses or
-direct API access, listed in [`public/loaders/NOTICE.md`](public/loaders/NOTICE.md).
+(fonts, panoramas, version data) under their own published licenses,
+direct API access, or fair nominative use, listed in
+[`public/loaders/NOTICE.md`](public/loaders/NOTICE.md) and
+[`public/branding/NOTICE.md`](public/branding/NOTICE.md).
 
 **Contents:** [Download](#download) · [Development](#development) ·
 [Stack](#stack) · [Data location](#data-location) ·

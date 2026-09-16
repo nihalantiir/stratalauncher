@@ -427,6 +427,13 @@
     "aboutHeading": "Acerca de",
     "versionLabel": "Versión {version}",
     "authorLabel": "Creado por {author}",
+    "updateCheck": "Buscar actualizaciones",
+    "updateChecking": "Buscando actualizaciones…",
+    "updateUpToDate": "Tienes la última versión.",
+    "updateAvailable": "La versión {version} está disponible.",
+    "updateInstallButton": "Instalar y reiniciar",
+    "updateInstalling": "Descargando actualización…",
+    "updateError": "No se pudieron buscar actualizaciones. Comprueba tu conexión e inténtalo de nuevo.",
     "disclosureLine1": "Strata Launcher no es un producto oficial de Minecraft. No cuenta con la aprobación de Mojang ni Microsoft, ni está asociado con ellos.",
     "disclosureLine2": "El inicio de sesión, las skins, las capas y los datos de la cuenta los gestionan directamente Mojang y Microsoft. Strata no tiene servidores propios y nunca guarda tus datos fuera de tu propio dispositivo."
   },

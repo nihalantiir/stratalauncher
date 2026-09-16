@@ -427,6 +427,13 @@
     "aboutHeading": "O aplikacji",
     "versionLabel": "Wersja {version}",
     "authorLabel": "Stworzone przez {author}",
+    "updateCheck": "Sprawdź aktualizacje",
+    "updateChecking": "Sprawdzanie aktualizacji…",
+    "updateUpToDate": "Masz najnowszą wersję.",
+    "updateAvailable": "Dostępna jest wersja {version}.",
+    "updateInstallButton": "Zainstaluj i uruchom ponownie",
+    "updateInstalling": "Pobieranie aktualizacji…",
+    "updateError": "Nie udało się sprawdzić aktualizacji. Sprawdź połączenie i spróbuj ponownie.",
     "disclosureLine1": "Strata Launcher nie jest oficjalnym produktem Minecraft. Nie jest zatwierdzony ani powiązany z Mojang lub Microsoft.",
     "disclosureLine2": "Logowanie, skiny, peleryny i dane konta są obsługiwane bezpośrednio przez Mojang i Microsoft. Strata nie posiada własnych serwerów i nigdy nie przechowuje twoich danych poza twoim urządzeniem."
   },

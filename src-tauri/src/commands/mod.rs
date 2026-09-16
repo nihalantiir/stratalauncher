@@ -13,5 +13,6 @@ pub mod screenshots;
 pub mod servers;
 pub mod skins;
 pub mod sync;
+pub mod updater;
 pub mod versions;
 pub mod worlds;

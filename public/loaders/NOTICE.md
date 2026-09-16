@@ -17,9 +17,9 @@ full/fabric.png, full/forge.png, full/neoforge.png, full/quilt.png, and
 full/lwjgl.png (the real colored marks, shown once that loader is selected,
 or in the Components panel) are each project's own official GitHub
 organization avatar, fetched directly from avatars.githubusercontent.com:
-FabricMC, MinecraftForge, neoforged, QuiltMC, and LWJGL respectively. Same
-"fine for personal use, revisit before distributing" situation as the four
-GPLv3 outline files above: these are each project's own trademark/branding,
-used here purely to identify compatibility (the same nominative use every
-other Minecraft launcher's loader picker makes of these same marks), not a
-claim of endorsement.
+FabricMC, MinecraftForge, neoforged, QuiltMC, and LWJGL respectively. These
+are each project's own trademark/branding, not covered by Strata's own
+GPL-3.0 license (a copyright license, not a trademark grant); used here
+purely to identify compatibility (the same nominative use every other
+Minecraft launcher's loader picker makes of these same marks), not a claim
+of endorsement.
