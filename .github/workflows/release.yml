@@ -40,12 +40,8 @@ jobs:
             updater -> target
 
       - name: Build main app
-        # Plain `cargo build --release` compiles fine but never enables the
-        # `custom-protocol` Cargo feature, which is the ONLY thing that makes
-        # Tauri load its embedded production assets instead of `devUrl`
-        # (`tauri-build`'s `is_dev()` reads that feature flag, not the cargo
-        # profile). `tauri build` sets it automatically; `--no-bundle` skips
-        # the NSIS/MSI installer step since this app ships as a portable zip.
+        # cargo build alone never enables Tauri's custom-protocol feature,
+        # which is what actually loads embedded assets instead of devUrl.
         run: npx tauri build --no-bundle
 
       - name: Build updater
