@@ -11,30 +11,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-check:
+  # Cheap, fast job on a Linux runner: decides which of the three real
+  # checks below are worth paying for. A docs-only commit (README, LICENSE,
+  # NOTICE files) touches none of these paths and skips every build.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      updater: ${{ steps.filter.outputs.updater }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'src/**'
+              - 'public/**'
+              - 'index.html'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'vite.config.js'
+            backend:
+              - 'src-tauri/**'
+            updater:
+              - 'updater/**'
+
+  frontend-check:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci
       - run: npm run build
 
+  backend-check:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+      - run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
 
-      - run: cargo check --manifest-path src-tauri/Cargo.toml
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
-
+  updater-check:
+    needs: changes
+    if: needs.changes.outputs.updater == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: updater -> target
-
-      - run: cargo check --manifest-path updater/Cargo.toml
+      - run: cargo check --manifest-path updater/Cargo.toml --locked
