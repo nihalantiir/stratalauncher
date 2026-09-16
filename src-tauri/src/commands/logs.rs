@@ -16,30 +16,36 @@ fn instance_dir_for(state: &State<'_, AppState>, instance_id: &str) -> AppResult
 #[tauri::command]
 pub fn list_log_files(instance_id: String, state: State<'_, AppState>) -> AppResult<Vec<LogFileMeta>> {
     let dir = instance_dir_for(&state, &instance_id)?;
-    logs::list_log_files(&dir)
+    logs::list_log_files(&dir.join("logs"))
 }
 
 #[tauri::command]
 pub fn read_minecraft_log(instance_id: String, filename: String, state: State<'_, AppState>) -> AppResult<Vec<LogLine>> {
     let dir = instance_dir_for(&state, &instance_id)?;
-    let text = logs::read_log_text(&dir, &filename)?;
+    let text = logs::read_log_text(&dir.join("logs"), &filename)?;
     Ok(logs::parse_log_lines(&text))
 }
 
 #[tauri::command]
 pub fn read_minecraft_log_raw(instance_id: String, filename: String, state: State<'_, AppState>) -> AppResult<String> {
     let dir = instance_dir_for(&state, &instance_id)?;
-    logs::read_log_text(&dir, &filename)
+    logs::read_log_text(&dir.join("logs"), &filename)
 }
 
 #[tauri::command]
-pub fn read_launcher_log() -> Vec<LogLine> {
-    logs::parse_log_lines(&crate::launcher_log::snapshot())
+pub fn list_launcher_log_files() -> AppResult<Vec<LogFileMeta>> {
+    logs::list_log_files(&crate::launcher_log::logs_dir())
 }
 
 #[tauri::command]
-pub fn read_launcher_log_raw() -> String {
-    crate::launcher_log::snapshot()
+pub fn read_launcher_log(filename: String) -> AppResult<Vec<LogLine>> {
+    let text = logs::read_log_text(&crate::launcher_log::logs_dir(), &filename)?;
+    Ok(logs::parse_log_lines(&text))
+}
+
+#[tauri::command]
+pub fn read_launcher_log_raw(filename: String) -> AppResult<String> {
+    logs::read_log_text(&crate::launcher_log::logs_dir(), &filename)
 }
 
 #[tauri::command]
@@ -52,7 +58,7 @@ pub fn get_logs_dir(instance_id: String, state: State<'_, AppState>) -> AppResul
 
 #[tauri::command]
 pub fn get_launcher_logs_dir() -> AppResult<String> {
-    let dir = crate::paths::data_dir().join("logs");
+    let dir = crate::launcher_log::logs_dir();
     std::fs::create_dir_all(&dir)?;
     Ok(dir.to_string_lossy().to_string())
 }

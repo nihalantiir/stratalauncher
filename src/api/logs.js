@@ -6,9 +6,11 @@ export const readMinecraftLog = (instanceId, filename) => invoke('read_minecraft
 
 export const readMinecraftLogRaw = (instanceId, filename) => invoke('read_minecraft_log_raw', { instanceId, filename });
 
-export const readLauncherLog = () => invoke('read_launcher_log');
+export const listLauncherLogFiles = () => invoke('list_launcher_log_files');
 
-export const readLauncherLogRaw = () => invoke('read_launcher_log_raw');
+export const readLauncherLog = (filename) => invoke('read_launcher_log', { filename });
+
+export const readLauncherLogRaw = (filename) => invoke('read_launcher_log_raw', { filename });
 
 export const getLogsDir = (instanceId) => invoke('get_logs_dir', { instanceId });
 

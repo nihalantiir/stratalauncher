@@ -187,6 +187,7 @@ pub fn run() {
             commands::logs::list_log_files,
             commands::logs::read_minecraft_log,
             commands::logs::read_minecraft_log_raw,
+            commands::logs::list_launcher_log_files,
             commands::logs::read_launcher_log,
             commands::logs::read_launcher_log_raw,
             commands::logs::get_logs_dir,

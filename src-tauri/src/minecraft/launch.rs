@@ -252,6 +252,12 @@ pub fn build_command(version_json: &serde_json::Value, opts: &LaunchOptions) -> 
     } else {
         cmd.args(&all_args);
     }
+
+    // Suppress java.exe's own console window; Strata has none of its own for it
+    // to inherit, so Windows would otherwise auto-allocate a visible one.
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000);
+
     Ok(cmd)
 }
 

@@ -32,8 +32,8 @@ const panelEl = ref(null);
 const instanceId = computed(() => instances.current?.id);
 
 const consoleTitle = computed(() => {
-  if (tab.value === 'launcher') return t('logs.tabLauncher');
-  return logFiles.value.find((f) => f.filename === selectedFile.value)?.label ?? t('logs.tabMinecraft');
+  const fallback = tab.value === 'launcher' ? t('logs.tabLauncher') : t('logs.tabMinecraft');
+  return logFiles.value.find((f) => f.filename === selectedFile.value)?.label ?? fallback;
 });
 
 function bucket(level) {
@@ -73,12 +73,15 @@ const filteredLines = computed(() => {
 });
 
 async function refreshFileList() {
-  if (!instanceId.value) {
+  if (tab.value === 'launcher') {
+    logFiles.value = await api.listLauncherLogFiles();
+  } else if (instanceId.value) {
+    logFiles.value = await api.listLogFiles(instanceId.value);
+  } else {
     logFiles.value = [];
     selectedFile.value = null;
     return;
   }
-  logFiles.value = await api.listLogFiles(instanceId.value);
   if (!logFiles.value.some((f) => f.filename === selectedFile.value)) {
     selectedFile.value = logFiles.value[0]?.filename ?? null;
   }
@@ -90,11 +93,13 @@ async function refreshLines() {
   uploadedUrl.value = null;
   insights.value = null;
   try {
-    lines.value = tab.value === 'minecraft'
-      ? instanceId.value && selectedFile.value
-        ? await api.readMinecraftLog(instanceId.value, selectedFile.value)
-        : []
-      : await api.readLauncherLog();
+    if (!selectedFile.value) {
+      lines.value = [];
+    } else if (tab.value === 'minecraft') {
+      lines.value = instanceId.value ? await api.readMinecraftLog(instanceId.value, selectedFile.value) : [];
+    } else {
+      lines.value = await api.readLauncherLog(selectedFile.value);
+    }
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -104,7 +109,7 @@ async function refreshLines() {
 
 async function switchTab(next) {
   tab.value = next;
-  if (next === 'minecraft') await refreshFileList();
+  await refreshFileList();
   await refreshLines();
 }
 
@@ -127,11 +132,11 @@ watch(lines, async () => {
 onActivated(refreshAll);
 
 async function currentRawText() {
+  if (!selectedFile.value) return '';
   if (tab.value === 'minecraft') {
-    if (!instanceId.value || !selectedFile.value) return '';
-    return api.readMinecraftLogRaw(instanceId.value, selectedFile.value);
+    return instanceId.value ? api.readMinecraftLogRaw(instanceId.value, selectedFile.value) : '';
   }
-  return api.readLauncherLogRaw();
+  return api.readLauncherLogRaw(selectedFile.value);
 }
 
 async function copyLog() {
@@ -200,13 +205,7 @@ function openUploaded() {
     </div>
 
     <div class="log-toolbar">
-      <GlassSelect
-        v-if="tab === 'minecraft'"
-        v-model="selectedFile"
-        :options="logFileOptions"
-        style="width: 220px"
-      />
-      <div v-else style="flex: 1"></div>
+      <GlassSelect v-model="selectedFile" :options="logFileOptions" style="width: 220px" />
 
       <div style="display: flex; gap: 8px; align-items: center">
         <button class="btn btn-ghost btn-sm" type="button" @click="copyLog">

@@ -5,7 +5,7 @@ use crate::error::{AppError, AppResult};
 use crate::timeutil::system_time_to_rfc3339;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -26,10 +26,6 @@ pub struct LogLine {
     pub message: String,
 }
 
-fn logs_dir(instance_dir: &Path) -> PathBuf {
-    instance_dir.join("logs")
-}
-
 /// `latest.log` -> "Latest session"; vanilla's rotated `2026-09-11-2.log.gz`
 /// -> "2026-09-11, session 2"; anything else falls back to the raw filename.
 fn label_for(filename: &str) -> String {
@@ -45,12 +41,11 @@ fn label_for(filename: &str) -> String {
     }
 }
 
-pub fn list_log_files(instance_dir: &Path) -> AppResult<Vec<LogFileMeta>> {
-    let dir = logs_dir(instance_dir);
-    std::fs::create_dir_all(&dir)?;
+pub fn list_log_files(dir: &Path) -> AppResult<Vec<LogFileMeta>> {
+    std::fs::create_dir_all(dir)?;
 
     let mut files = Vec::new();
-    for entry in std::fs::read_dir(&dir)? {
+    for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         if !entry.file_type()?.is_file() {
             continue;
@@ -79,8 +74,8 @@ pub fn list_log_files(instance_dir: &Path) -> AppResult<Vec<LogFileMeta>> {
 
 const MAX_LOG_BYTES: usize = 2 * 1024 * 1024;
 
-pub fn read_log_text(instance_dir: &Path, filename: &str) -> AppResult<String> {
-    let path = logs_dir(instance_dir).join(filename);
+pub fn read_log_text(dir: &Path, filename: &str) -> AppResult<String> {
+    let path = dir.join(filename);
     let bytes = if filename.ends_with(".gz") {
         let file = std::fs::File::open(&path)?;
         let mut decoder = flate2::read::GzDecoder::new(file);
