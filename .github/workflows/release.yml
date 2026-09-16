@@ -30,7 +30,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run build
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -41,7 +40,13 @@ jobs:
             updater -> target
 
       - name: Build main app
-        run: cargo build --release --manifest-path src-tauri/Cargo.toml
+        # Plain `cargo build --release` compiles fine but never enables the
+        # `custom-protocol` Cargo feature, which is the ONLY thing that makes
+        # Tauri load its embedded production assets instead of `devUrl`
+        # (`tauri-build`'s `is_dev()` reads that feature flag, not the cargo
+        # profile). `tauri build` sets it automatically; `--no-bundle` skips
+        # the NSIS/MSI installer step since this app ships as a portable zip.
+        run: npx tauri build --no-bundle
 
       - name: Build updater
         run: cargo build --release --manifest-path updater/Cargo.toml
