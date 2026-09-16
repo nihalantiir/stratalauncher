@@ -10,6 +10,7 @@ pub mod logs;
 pub mod media;
 pub mod migration;
 pub mod modpack;
+pub mod opener;
 pub mod screenshots;
 pub mod servers;
 pub mod skins;

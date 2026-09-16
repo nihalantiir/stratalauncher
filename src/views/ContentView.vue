@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onActivated, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { openPath } from '@tauri-apps/plugin-opener';
+import { openPath } from '../api/opener';
 import { useInstancesStore } from '../stores/instances';
 import * as api from '../api/content';
 import DownloadContentModal from '../components/content/DownloadContentModal.vue';

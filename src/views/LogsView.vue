@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onActivated, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { openPath } from '../api/opener';
 import { useInstancesStore } from '../stores/instances';
 import { useLogUploadTarget, UPLOAD_TARGET_LABELS } from '../composables/useLogUploadTarget';
 import * as api from '../api/logs';

@@ -1,6 +1,6 @@
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { openPath } from '@tauri-apps/plugin-opener';
+import { openPath } from '../api/opener';
 import { useInstancesStore } from '../stores/instances';
 import { useAccountsStore } from '../stores/accounts';
 import { launchInstance } from '../api/launch';

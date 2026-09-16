@@ -211,6 +211,7 @@ pub fn run() {
             commands::app_settings::set_pending_data_dir,
             commands::app_settings::reset_data_dir,
             commands::app_settings::restart_app,
+            commands::opener::open_in_explorer,
             commands::capes::get_cape_catalog,
             commands::updater::check_for_update,
             commands::updater::install_update,
