@@ -63,7 +63,6 @@ pub struct LaunchOutcome {
 
 const DEFAULT_WINDOW_WIDTH: u32 = 925;
 const DEFAULT_WINDOW_HEIGHT: u32 = 530;
-const DEFAULT_MEMORY_MB: u32 = 2048;
 
 fn parse_env_vars(raw: &str) -> Vec<(String, String)> {
     raw.lines()
@@ -301,9 +300,10 @@ pub async fn prepare_and_launch(
     };
 
     // Same inherit chain as window size below: instance value, then global
-    // default, then the hardcoded built-in.
-    let memory_mb = req.memory_mb.or(req.global_memory_mb).unwrap_or(DEFAULT_MEMORY_MB);
-    let min_memory_mb = req.min_memory_mb.or(req.global_min_memory_mb).unwrap_or_else(|| memory_mb.min(1024));
+    // default, then a system-RAM-aware recommendation. Min defaults to max
+    // (Xms = Xmx), the modern guidance to avoid heap-resize stutter.
+    let memory_mb = req.memory_mb.or(req.global_memory_mb).unwrap_or_else(crate::hardware::recommended_memory_mb);
+    let min_memory_mb = req.min_memory_mb.or(req.global_min_memory_mb).unwrap_or(memory_mb);
 
     // An instance either fully customizes its own window (width and height
     // both set) or fully inherits the global one, never a mix of the two.

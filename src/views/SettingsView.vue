@@ -13,7 +13,15 @@ import { useAccountsStore } from '../stores/accounts';
 import GlassSelect from '../components/common/GlassSelect.vue';
 import LoginModal from '../components/auth/LoginModal.vue';
 import SkinHead from '../components/common/SkinHead.vue';
-import { getAppSettings, updateAppSettings, getDataDirInfo, setPendingDataDir, resetDataDir, restartApp } from '../api/appSettings';
+import {
+  getAppSettings,
+  updateAppSettings,
+  getDataDirInfo,
+  setPendingDataDir,
+  resetDataDir,
+  restartApp,
+  getRecommendedMemoryMb,
+} from '../api/appSettings';
 import { checkForUpdate, installUpdate } from '../api/updater';
 import { version as appVersion } from '../../package.json';
 
@@ -47,6 +55,7 @@ const active = ref('language');
 const windowWidth = ref(925);
 const windowHeight = ref(530);
 const windowMaximized = ref(false);
+const recommendedMemoryMb = ref(2048);
 const defaultMemoryMb = ref(2048);
 const defaultMinMemoryMb = ref(1024);
 const jvmArgs = ref('');
@@ -85,8 +94,8 @@ function applyFromSettings(s) {
   windowWidth.value = s.windowWidth ?? 925;
   windowHeight.value = s.windowHeight ?? 530;
   windowMaximized.value = !!s.windowMaximized;
-  defaultMemoryMb.value = s.defaultMemoryMb ?? 2048;
-  defaultMinMemoryMb.value = s.defaultMinMemoryMb ?? 1024;
+  defaultMemoryMb.value = s.defaultMemoryMb ?? recommendedMemoryMb.value;
+  defaultMinMemoryMb.value = s.defaultMinMemoryMb ?? recommendedMemoryMb.value;
   jvmArgs.value = s.jvmArgs ?? '';
   skipJavaCheckDefault.value = !!s.skipJavaCheckDefault;
   envVars.value = s.envVars ?? '';
@@ -113,8 +122,8 @@ const hasPendingChanges = computed(() => {
     windowWidth.value !== (o.windowWidth ?? 925) ||
     windowHeight.value !== (o.windowHeight ?? 530) ||
     windowMaximized.value !== !!o.windowMaximized ||
-    defaultMemoryMb.value !== (o.defaultMemoryMb ?? 2048) ||
-    defaultMinMemoryMb.value !== (o.defaultMinMemoryMb ?? 1024) ||
+    defaultMemoryMb.value !== (o.defaultMemoryMb ?? recommendedMemoryMb.value) ||
+    defaultMinMemoryMb.value !== (o.defaultMinMemoryMb ?? recommendedMemoryMb.value) ||
     jvmArgs.value.trim() !== (o.jvmArgs ?? '') ||
     skipJavaCheckDefault.value !== !!o.skipJavaCheckDefault ||
     envVars.value.trim() !== (o.envVars ?? '') ||
@@ -252,6 +261,7 @@ async function doInstallUpdate() {
 }
 
 onMounted(async () => {
+  recommendedMemoryMb.value = await getRecommendedMemoryMb();
   loadSettings();
   loadDataDirInfo();
   accounts.refresh();

@@ -11,3 +11,5 @@ export const setPendingDataDir = (path) => invoke('set_pending_data_dir', { path
 export const resetDataDir = () => invoke('reset_data_dir');
 
 export const restartApp = () => invoke('restart_app');
+
+export const getRecommendedMemoryMb = () => invoke('get_recommended_memory_mb');

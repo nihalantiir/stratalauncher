@@ -151,3 +151,9 @@ pub fn restart_app(app: tauri::AppHandle) -> AppResult<()> {
     app.exit(0);
     Ok(())
 }
+
+/// The memory default shown/used wherever nothing more specific is set.
+#[tauri::command]
+pub fn get_recommended_memory_mb() -> u32 {
+    crate::hardware::recommended_memory_mb()
+}

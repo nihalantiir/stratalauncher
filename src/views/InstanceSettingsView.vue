@@ -6,7 +6,7 @@ import { useInstancesStore } from '../stores/instances';
 import { useVersionsStore } from '../stores/versions';
 import { getRequiredJava, probeJavaAt } from '../api/java';
 import { listWorlds } from '../api/worlds';
-import { getAppSettings } from '../api/appSettings';
+import { getAppSettings, getRecommendedMemoryMb } from '../api/appSettings';
 import { parseVersionKey, compareVersionKeys, resolveTargetVersion } from '../lib/versionMath';
 import GlassSelect from '../components/common/GlassSelect.vue';
 
@@ -67,8 +67,9 @@ const worlds = ref([]);
 // What "inherit" actually resolves to right now, for the read-only summary shown when an override is
 // off, kept live so it's never a stale number.
 const globalDefaults = ref({ defaultMemoryMb: null, defaultMinMemoryMb: null, windowWidth: null, windowHeight: null, windowMaximized: false });
-const resolvedMemoryMb = computed(() => globalDefaults.value.defaultMemoryMb ?? 2048);
-const resolvedMinMemoryMb = computed(() => globalDefaults.value.defaultMinMemoryMb ?? Math.min(resolvedMemoryMb.value, 1024));
+const recommendedMemoryMb = ref(2048);
+const resolvedMemoryMb = computed(() => globalDefaults.value.defaultMemoryMb ?? recommendedMemoryMb.value);
+const resolvedMinMemoryMb = computed(() => globalDefaults.value.defaultMinMemoryMb ?? resolvedMemoryMb.value);
 const resolvedWindowLabel = computed(() => {
   if (globalDefaults.value.windowMaximized) return t('instances.windowMaximized');
   return `${globalDefaults.value.windowWidth ?? 925} × ${globalDefaults.value.windowHeight ?? 530}`;
@@ -161,7 +162,7 @@ function loadFromInstance() {
 
 async function loadGlobalDefaults() {
   try {
-    const s = await getAppSettings();
+    const [s, recommended] = await Promise.all([getAppSettings(), getRecommendedMemoryMb()]);
     globalDefaults.value = {
       defaultMemoryMb: s.defaultMemoryMb,
       defaultMinMemoryMb: s.defaultMinMemoryMb,
@@ -169,6 +170,7 @@ async function loadGlobalDefaults() {
       windowHeight: s.windowHeight,
       windowMaximized: s.windowMaximized,
     };
+    recommendedMemoryMb.value = recommended;
   } catch {
     // Falls back to the same built-in defaults the backend itself uses.
   }
@@ -311,19 +313,19 @@ async function confirmDelete() {
           </svg>
           <span>{{ t('instances.sectionGeneral') }}</span>
         </button>
-        <button type="button" class="nav-item" :class="{ active: active === 'java' }" @click="active = 'java'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M9 3v3a3 3 0 0 0 6 0V3" />
-            <path d="M6 10h12l-1 8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" />
-          </svg>
-          <span>{{ t('instances.sectionJava') }}</span>
-        </button>
         <button type="button" class="nav-item" :class="{ active: active === 'memory' }" @click="active = 'memory'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="3" y="7" width="18" height="10" rx="1.5" />
             <path d="M7 7v4M11 7v4M15 7v4M19 7v4" />
           </svg>
           <span>{{ t('instances.sectionMemory') }}</span>
+        </button>
+        <button type="button" class="nav-item" :class="{ active: active === 'java' }" @click="active = 'java'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 3v3a3 3 0 0 0 6 0V3" />
+            <path d="M6 10h12l-1 8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" />
+          </svg>
+          <span>{{ t('instances.sectionJava') }}</span>
         </button>
 
         <div class="nav-group-label">{{ t('instances.advancedGroupLabel') }}</div>
@@ -343,8 +345,9 @@ async function confirmDelete() {
           <span>{{ t('instances.sectionWindow') }}</span>
         </button>
         <button type="button" class="nav-item" :class="{ active: active === 'behavior' }" @click="active = 'behavior'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <polygon points="6 3 20 12 6 21 6 3" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 3v18" />
+            <path d="M5 4h12l-2.5 3L17 10H5" />
           </svg>
           <span>{{ t('instances.sectionOnLaunch') }}</span>
         </button>
@@ -380,6 +383,41 @@ async function confirmDelete() {
           >
             {{ t('instances.deleteInstance') }}
           </button>
+        </div>
+
+        <div v-else-if="active === 'memory'" class="field-group">
+          <h4>{{ t('instances.sectionMemory') }}</h4>
+
+          <label class="checkbox-row">
+            <input type="checkbox" v-model="memoryOverride" />
+            {{ t('instances.memoryOverride') }}
+          </label>
+
+          <template v-if="memoryOverride">
+            <label class="field-label settings-field-label" for="inst-memory-max">{{ t('instances.maxMemoryLabel') }}</label>
+            <div class="slider-row">
+              <input type="range" min="512" max="16384" step="256" v-model.number="memoryMb" />
+              <div class="slider-num-wrap">
+                <input id="inst-memory-max" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="memoryMb" />
+                <span class="slider-num-suffix">MB</span>
+              </div>
+            </div>
+            <p class="hint">{{ t('instances.memoryGbEquivalent', { gb: memoryLabel }) }}</p>
+
+            <label class="field-label settings-field-label" for="inst-memory-min">{{ t('instances.minMemoryLabel') }}</label>
+            <div class="slider-row">
+              <input type="range" min="512" max="16384" step="256" v-model.number="minMemoryMb" />
+              <div class="slider-num-wrap">
+                <input id="inst-memory-min" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="minMemoryMb" />
+                <span class="slider-num-suffix">MB</span>
+              </div>
+            </div>
+            <p class="hint">{{ t('instances.minMemoryHint') }}</p>
+            <p v-if="memoryTooLow" class="java-warning">{{ t('instances.memoryTooLow') }}</p>
+          </template>
+          <p v-else class="hint inherit-note">
+            {{ t('instances.memoryInherited', { max: (resolvedMemoryMb / 1024).toFixed(1), min: (resolvedMinMemoryMb / 1024).toFixed(1) }) }}
+          </p>
         </div>
 
         <div v-else-if="active === 'java'" class="field-group">
@@ -420,41 +458,6 @@ async function confirmDelete() {
             {{ t('instances.skipJavaCheck') }}
           </label>
           <p class="java-warning">{{ t('instances.skipJavaCheckHint') }}</p>
-        </div>
-
-        <div v-else-if="active === 'memory'" class="field-group">
-          <h4>{{ t('instances.sectionMemory') }}</h4>
-
-          <label class="checkbox-row">
-            <input type="checkbox" v-model="memoryOverride" />
-            {{ t('instances.memoryOverride') }}
-          </label>
-
-          <template v-if="memoryOverride">
-            <label class="field-label settings-field-label" for="inst-memory-max">{{ t('instances.maxMemoryLabel') }}</label>
-            <div class="slider-row">
-              <input type="range" min="512" max="16384" step="256" v-model.number="memoryMb" />
-              <div class="slider-num-wrap">
-                <input id="inst-memory-max" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="memoryMb" />
-                <span class="slider-num-suffix">MB</span>
-              </div>
-            </div>
-            <p class="hint">{{ t('instances.memoryGbEquivalent', { gb: memoryLabel }) }}</p>
-
-            <label class="field-label settings-field-label" for="inst-memory-min">{{ t('instances.minMemoryLabel') }}</label>
-            <div class="slider-row">
-              <input type="range" min="512" max="16384" step="256" v-model.number="minMemoryMb" />
-              <div class="slider-num-wrap">
-                <input id="inst-memory-min" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="minMemoryMb" />
-                <span class="slider-num-suffix">MB</span>
-              </div>
-            </div>
-            <p class="hint">{{ t('instances.minMemoryHint') }}</p>
-            <p v-if="memoryTooLow" class="java-warning">{{ t('instances.memoryTooLow') }}</p>
-          </template>
-          <p v-else class="hint inherit-note">
-            {{ t('instances.memoryInherited', { max: (resolvedMemoryMb / 1024).toFixed(1), min: (resolvedMinMemoryMb / 1024).toFixed(1) }) }}
-          </p>
         </div>
 
         <div v-else-if="active === 'jvm'" class="field-group">
