@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
           <span>{{ t('settings.behaviorHeading') }}</span>
         </button>
 
-        <div class="nav-group-label">{{ t('settings.accountGroupLabel') }}</div>
+        <div class="nav-group-label">{{ t('settings.miscGroupLabel') }}</div>
         <button type="button" class="nav-item" :class="{ active: active === 'accounts' }" @click="active = 'accounts'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="8" r="3.4" />
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
           </svg>
           <span>{{ t('settings.accountsHeading') }}</span>
         </button>
-        <button type="button" class="nav-item nav-item-footer" :class="{ active: active === 'about' }" @click="active = 'about'">
+        <button type="button" class="nav-item" :class="{ active: active === 'about' }" @click="active = 'about'">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="12" r="9" />
             <line x1="12" y1="11" x2="12" y2="16" />

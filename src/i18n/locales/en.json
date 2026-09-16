@@ -417,7 +417,7 @@
     "skipJavaCheckDefaultHint": "Applied to new instances only. Each can still change it afterward.",
     "commandsHeading": "Commands & Environment",
     "globalCommandsHint": "Real shell commands, run locally, before each instance's own.",
-    "accountGroupLabel": "Account",
+    "miscGroupLabel": "Miscellaneous",
     "accountsHeading": "Accounts",
     "saveChanges": "Save changes",
     "discardChanges": "Discard",

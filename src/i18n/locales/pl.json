@@ -417,7 +417,7 @@
     "skipJavaCheckDefaultHint": "Dotyczy tylko nowych instancji. Każda może to później zmienić.",
     "commandsHeading": "Polecenia i środowisko",
     "globalCommandsHint": "Prawdziwe polecenia powłoki, uruchamiane lokalnie, przed własnymi poleceniami danej instancji.",
-    "accountGroupLabel": "Konto",
+    "miscGroupLabel": "Różne",
     "accountsHeading": "Konta",
     "saveChanges": "Zapisz zmiany",
     "discardChanges": "Odrzuć",

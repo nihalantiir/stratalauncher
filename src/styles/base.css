@@ -3449,20 +3449,12 @@ input[type='range'] {
   margin-bottom: 0;
 }
 
-/* Group headers inside a settings nav rail (e.g. "MINECRAFT", "ACCOUNT"):
+/* Group headers inside a settings nav rail (e.g. "MINECRAFT", "MISCELLANEOUS"):
    reuses the sidebar's own .nav-group-label look for free visual
    consistency between the app's two nav rails. */
 .settings-nav .nav-group-label {
   padding-left: 10px;
   padding-right: 10px;
-}
-/* A visual break before the always-last, rarely-touched item (About):
-   pushes it slightly away from the working sections above it without a
-   second group label, since it isn't really a "category" of its own. */
-.settings-nav .nav-item-footer {
-  margin-top: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
 }
 
 /* A small, muted status pill: "this is currently the default/custom

@@ -417,7 +417,7 @@
     "skipJavaCheckDefaultHint": "Solo se aplica a las instancias nuevas. Cada una puede cambiarlo después.",
     "commandsHeading": "Comandos y entorno",
     "globalCommandsHint": "Comandos reales de shell, ejecutados localmente, antes que los propios de cada instancia.",
-    "accountGroupLabel": "Cuenta",
+    "miscGroupLabel": "Varios",
     "accountsHeading": "Cuentas",
     "saveChanges": "Guardar cambios",
     "discardChanges": "Descartar",
