@@ -206,7 +206,7 @@ function onHeroContextMenu(event) {
                 </svg>
               </span>
             </div>
-            <h2>{{ instances.current.name }}</h2>
+            <h2 :title="instances.current.name">{{ instances.current.name }}</h2>
             <p style="font-size: 12.5px; color: rgba(244, 239, 228, 0.75); margin-bottom: 4px">{{ lastPlayedText }}</p>
 
             <div class="hero-actions" style="display: flex; gap: 10px">
