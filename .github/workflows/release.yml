@@ -14,13 +14,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify tag matches Cargo.toml version
+      - name: Verify tag matches every version file
         shell: pwsh
         run: |
           $tagVersion = "${{ github.ref_name }}".TrimStart("v")
           $cargoVersion = (Select-String -Path src-tauri/Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
-          if ($tagVersion -ne $cargoVersion) {
-            Write-Error "Tag ${{ github.ref_name }} does not match src-tauri/Cargo.toml version $cargoVersion. Bump the version files and commit before tagging."
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $tauriVersion = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $mismatches = @()
+          if ($tagVersion -ne $cargoVersion) { $mismatches += "src-tauri/Cargo.toml ($cargoVersion)" }
+          if ($tagVersion -ne $packageVersion) { $mismatches += "package.json ($packageVersion)" }
+          if ($tagVersion -ne $tauriVersion) { $mismatches += "src-tauri/tauri.conf.json ($tauriVersion)" }
+          if ($mismatches.Count -gt 0) {
+            Write-Error "Tag ${{ github.ref_name }} doesn't match: $($mismatches -join ', '). Bump every version file and commit before tagging."
             exit 1
           }
 
