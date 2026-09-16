@@ -1,7 +1,5 @@
-//! Opens an already-resolved path in the OS file explorer via the opener
-//! plugin's direct Rust API, which skips its IPC command's static scope
-//! check (that scope can't express Strata's dynamic, possibly user-chosen
-//! data directory, so the plugin's own `open_path` command always denies it).
+//! Opens a path via the opener plugin's direct Rust API, skipping its IPC
+//! command's static scope check (can't express our dynamic data directory).
 
 use crate::error::{AppError, AppResult};
 use tauri::AppHandle;

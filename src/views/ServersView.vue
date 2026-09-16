@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onActivated, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useInstancesStore } from '../stores/instances';
 import * as api from '../api/servers';
 import { firstGrapheme } from '../lib/text';
@@ -59,7 +60,7 @@ function serverIcon(server, index) {
 function onContextMenu(event, server, index) {
   openContextMenu(event, [
     { label: t('servers.refresh'), icon: 'rotate', action: () => rePing(index) },
-    { label: t('servers.copyAddress'), icon: 'copy', action: () => navigator.clipboard.writeText(server.address) },
+    { label: t('servers.copyAddress'), icon: 'copy', action: () => writeText(server.address) },
   ]);
 }
 

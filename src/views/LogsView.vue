@@ -2,6 +2,7 @@
 import { ref, computed, nextTick, onMounted, onActivated, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { openPath } from '../api/opener';
 import { useInstancesStore } from '../stores/instances';
 import { useLogUploadTarget, UPLOAD_TARGET_LABELS } from '../composables/useLogUploadTarget';
@@ -136,7 +137,7 @@ async function currentRawText() {
 async function copyLog() {
   try {
     const text = await currentRawText();
-    await navigator.clipboard.writeText(text);
+    await writeText(text);
     copyState.value = 'copied';
     setTimeout(() => (copyState.value = 'idle'), 1500);
   } catch (e) {
@@ -146,7 +147,7 @@ async function copyLog() {
 
 async function copyUploadedLink() {
   if (!uploadedUrl.value) return;
-  await navigator.clipboard.writeText(uploadedUrl.value);
+  await writeText(uploadedUrl.value);
   linkCopyState.value = 'copied';
   setTimeout(() => (linkCopyState.value = 'idle'), 1500);
 }

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAccountsStore } from '../../stores/accounts';
 
 const emit = defineEmits(['close']);
@@ -39,7 +40,7 @@ async function copyCode() {
   const code = accounts.loginStage?.userCode;
   if (!code) return;
   try {
-    await navigator.clipboard.writeText(code);
+    await writeText(code);
     codeCopied.value = true;
     setTimeout(() => (codeCopied.value = false), 1500);
   } catch {

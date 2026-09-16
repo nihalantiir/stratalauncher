@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAccountsStore } from '../../stores/accounts';
 import { useInstancesStore } from '../../stores/instances';
 import { useNotificationsStore } from '../../stores/notifications';
@@ -107,7 +108,7 @@ function onAccountContextMenu(event, acc) {
   const isActive = acc.id === accounts.active?.id;
   openContextMenu(event, [
     ...(isActive ? [] : [{ label: t('topbar.setActive'), icon: 'power', action: () => selectAccount(acc.id) }]),
-    { label: t('topbar.copyUsername'), icon: 'copy', action: () => navigator.clipboard.writeText(acc.username) },
+    { label: t('topbar.copyUsername'), icon: 'copy', action: () => writeText(acc.username) },
     'separator',
     { label: t('topbar.remove'), icon: 'trash', danger: true, action: () => accounts.remove(acc.id) },
   ]);

@@ -3,7 +3,6 @@
 
 use std::collections::VecDeque;
 use std::io::Write;
-use std::sync::{Mutex, OnceLock};
 
 const CAP: usize = 2000;
 
@@ -26,12 +25,6 @@ impl Level {
     }
 }
 
-static BUFFER: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
-
-fn buffer() -> &'static Mutex<VecDeque<String>> {
-    BUFFER.get_or_init(|| Mutex::new(VecDeque::with_capacity(CAP)))
-}
-
 fn log_path() -> std::path::PathBuf {
     crate::paths::data_dir().join("logs").join("launcher.log")
 }
@@ -39,14 +32,6 @@ fn log_path() -> std::path::PathBuf {
 fn record(level: Level, category: &str, message: &str) {
     let time = chrono::Local::now().format("%H:%M:%S");
     let line = format!("[{time}] [main/{}] ({category}): {message}", level.as_str());
-
-    {
-        let mut buf = buffer().lock().unwrap();
-        if buf.len() >= CAP {
-            buf.pop_front();
-        }
-        buf.push_back(line.clone());
-    }
 
     let path = log_path();
     if let Some(dir) = path.parent() {
@@ -72,8 +57,15 @@ pub fn debug(category: &str, message: impl AsRef<str>) {
     record(Level::Debug, category, message.as_ref());
 }
 
-/// The current session's buffered lines, newest last; avoids re-reading
-/// `launcher.log` from disk each time.
+/// Reads `launcher.log` fresh so it survives restarts, tail-capped to `CAP`
+/// lines rather than loaded in full.
 pub fn snapshot() -> String {
-    buffer().lock().unwrap().iter().cloned().collect::<Vec<_>>().join("\n")
+    let Ok(text) = std::fs::read_to_string(log_path()) else {
+        return String::new();
+    };
+    let mut lines: VecDeque<&str> = text.lines().collect();
+    while lines.len() > CAP {
+        lines.pop_front();
+    }
+    lines.into_iter().collect::<Vec<_>>().join("\n")
 }
