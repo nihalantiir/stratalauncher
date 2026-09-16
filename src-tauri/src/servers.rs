@@ -328,3 +328,29 @@ pub async fn ping_server(address: &str) -> AppResult<ServerStatus> {
         }),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{split_address, write_varint};
+
+    #[test]
+    fn write_varint_matches_the_protocol_spec() {
+        // Reference values from wiki.vg's Server List Ping protocol page.
+        let cases: [(i32, &[u8]); 5] = [(0, &[0x00]), (1, &[0x01]), (127, &[0x7F]), (128, &[0x80, 0x01]), (25565, &[0xDD, 0xC7, 0x01])];
+        for (value, expected) in cases {
+            let mut buf = Vec::new();
+            write_varint(&mut buf, value);
+            assert_eq!(buf, expected, "encoding {value}");
+        }
+    }
+
+    #[test]
+    fn split_address_reads_an_explicit_port() {
+        assert_eq!(split_address("mc.hypixel.net:25565"), ("mc.hypixel.net".to_string(), 25565));
+    }
+
+    #[test]
+    fn split_address_defaults_to_25565_when_no_port_is_given() {
+        assert_eq!(split_address("mc.hypixel.net"), ("mc.hypixel.net".to_string(), 25565));
+    }
+}

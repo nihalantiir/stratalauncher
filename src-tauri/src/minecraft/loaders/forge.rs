@@ -313,3 +313,58 @@ pub async fn ensure_installed(
     crate::launcher_log::info(loader, format!("{effective_id} installed"));
     Ok(json)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn neoforge_prefix_handles_both_mc_versioning_schemes() {
+        // Pre-1.21.11 "1.X.Y" scheme.
+        assert_eq!(neoforge_prefix("1.20.4"), Some("20.4.".to_string()));
+        assert_eq!(neoforge_prefix("1.20"), Some("20.0.".to_string()));
+        // Newer no-leading-"1." scheme (the real bug: used to return None here).
+        // A bare "major.minor" normalizes in a ".0" patch to match real build ids like "26.2.0.88".
+        assert_eq!(neoforge_prefix("26.2"), Some("26.2.0.".to_string()));
+        assert_eq!(neoforge_prefix("25.1.3"), Some("25.1.3.".to_string()));
+        assert_eq!(neoforge_prefix("not-a-version"), None);
+    }
+
+    #[test]
+    fn installer_url_routes_1_20_1_neoforge_through_the_legacy_forge_host() {
+        assert_eq!(
+            installer_url("forge", "1.20.1", "47.1.106"),
+            "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.1.106/forge-1.20.1-47.1.106-installer.jar"
+        );
+        assert_eq!(
+            installer_url("neoforge", "1.20.1", "47.1.106"),
+            "https://maven.neoforged.net/releases/net/neoforged/forge/1.20.1-47.1.106/forge-1.20.1-47.1.106-installer.jar"
+        );
+        assert_eq!(
+            installer_url("neoforge", "1.21.1", "21.1.100"),
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.100/neoforge-21.1.100-installer.jar"
+        );
+    }
+
+    #[test]
+    fn effective_version_id_must_match_what_the_installer_writes() {
+        assert_eq!(effective_version_id("forge", "1.20.1", "47.1.106"), "1.20.1-forge-47.1.106");
+        // 1.20.1 NeoForge shares Forge's version-id shape, not the modern "neoforge-*" one.
+        assert_eq!(effective_version_id("neoforge", "1.20.1", "47.1.106"), "1.20.1-forge-47.1.106");
+        assert_eq!(effective_version_id("neoforge", "1.21.1", "21.1.100"), "neoforge-21.1.100");
+    }
+
+    #[test]
+    fn version_key_sorts_numerically_not_lexically() {
+        let mut versions = vec!["9.20.0".to_string(), "10.5.0".to_string(), "9.5.0".to_string()];
+        versions.sort_by_key(|v| version_key(v));
+        assert_eq!(versions, vec!["9.5.0", "9.20.0", "10.5.0"]);
+    }
+
+    #[test]
+    fn extract_tag_contents_reads_every_occurrence() {
+        let xml = "<metadata><versioning><versions><version>1.20.1-47.1.100</version><version>1.20.1-47.1.106</version></versions></versioning></metadata>";
+        assert_eq!(extract_tag_contents(xml, "version"), vec!["1.20.1-47.1.100", "1.20.1-47.1.106"]);
+        assert_eq!(extract_tag_contents(xml, "missing"), Vec::<String>::new());
+    }
+}

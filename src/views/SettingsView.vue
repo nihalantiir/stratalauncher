@@ -15,7 +15,7 @@ import LoginModal from '../components/auth/LoginModal.vue';
 import SkinHead from '../components/common/SkinHead.vue';
 import { getAppSettings, updateAppSettings, getDataDirInfo, setPendingDataDir, resetDataDir, restartApp } from '../api/appSettings';
 import { checkForUpdate, installUpdate } from '../api/updater';
-import pkg from '../../package.json';
+import { version as appVersion } from '../../package.json';
 
 const { t } = useI18n();
 const { locale, locales } = useLocale();
@@ -623,7 +623,7 @@ onBeforeUnmount(() => {
           <h4 class="about-title">{{ t('app.name') }}</h4>
           <img src="/branding/about-artwork.webp" alt="" class="about-artwork" />
           <div class="about-meta">
-            <span>{{ t('settings.versionLabel', { version: pkg.version }) }}</span>
+            <span>{{ t('settings.versionLabel', { version: appVersion }) }}</span>
             <span class="about-sep" aria-hidden="true">•</span>
             <span>{{ t('settings.authorLabel', { author: 'Nihalantiir' }) }}</span>
           </div>
