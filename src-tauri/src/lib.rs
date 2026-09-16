@@ -216,6 +216,8 @@ pub fn run() {
             commands::opener::open_in_explorer,
             commands::app_settings::get_recommended_memory_mb,
             commands::java::list_java_installations,
+            commands::java::list_downloaded_runtimes,
+            commands::java::delete_downloaded_runtime,
             commands::capes::get_cape_catalog,
             commands::updater::check_for_update,
             commands::updater::install_update,

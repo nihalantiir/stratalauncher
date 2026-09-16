@@ -23,6 +23,7 @@ import {
   getRecommendedMemoryMb,
 } from '../api/appSettings';
 import { checkForUpdate, installUpdate } from '../api/updater';
+import { listDownloadedRuntimes, deleteDownloadedRuntime } from '../api/java';
 import { version as appVersion } from '../../package.json';
 
 const { t } = useI18n();
@@ -214,6 +215,37 @@ async function resetDataDirToDefault() {
   }
 }
 
+// ---- Downloaded Java runtimes ----
+const downloadedRuntimes = ref([]);
+const loadingRuntimes = ref(false);
+const deletingRuntime = ref(null);
+
+async function loadDownloadedRuntimes() {
+  loadingRuntimes.value = true;
+  try {
+    downloadedRuntimes.value = await listDownloadedRuntimes();
+  } catch {
+    downloadedRuntimes.value = [];
+  } finally {
+    loadingRuntimes.value = false;
+  }
+}
+
+async function removeRuntime(component) {
+  deletingRuntime.value = component;
+  try {
+    await deleteDownloadedRuntime(component);
+    downloadedRuntimes.value = downloadedRuntimes.value.filter((r) => r.component !== component);
+  } finally {
+    deletingRuntime.value = null;
+  }
+}
+
+function formatBytes(n) {
+  if (n >= 1024 * 1024 * 1024) return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  return `${(n / (1024 * 1024)).toFixed(0)} MB`;
+}
+
 // ---- Accounts ----
 const loginOpen = ref(false);
 function removeAccount(id, event) {
@@ -264,6 +296,7 @@ onMounted(async () => {
   recommendedMemoryMb.value = await getRecommendedMemoryMb();
   loadSettings();
   loadDataDirInfo();
+  loadDownloadedRuntimes();
   accounts.refresh();
   checkUpdate();
   availableUploadTargets.value = await listUploadTargets();
@@ -537,6 +570,30 @@ onBeforeUnmount(() => {
             {{ t('settings.skipJavaCheckDefault') }}
           </label>
           <p class="java-warning">{{ t('settings.skipJavaCheckDefaultHint') }}</p>
+
+          <label class="field-label settings-field-label" style="margin-top: 20px">{{ t('settings.runtimesLabel') }}</label>
+          <p class="hint">{{ t('settings.runtimesHint') }}</p>
+          <p v-if="!loadingRuntimes && downloadedRuntimes.length === 0" class="hint">{{ t('settings.runtimesEmpty') }}</p>
+          <div v-else class="component-list">
+            <div v-for="r in downloadedRuntimes" :key="r.component" class="component-row">
+              <img src="/loaders/full/openjdk.png" alt="" class="component-icon" />
+              <span class="component-name">{{ r.component }}</span>
+              <span class="component-version mono">{{ formatBytes(r.sizeBytes) }}</span>
+              <button
+                class="icon-btn icon-btn-danger"
+                type="button"
+                style="margin-left: 8px"
+                :disabled="deletingRuntime === r.component"
+                v-tooltip="t('settings.runtimesDelete')"
+                @click="removeRuntime(r.component)"
+              >
+                <span v-if="deletingRuntime === r.component" class="spinner"></span>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div v-else-if="active === 'jvm'" class="field-group">

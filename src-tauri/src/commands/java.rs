@@ -39,3 +39,46 @@ pub fn probe_java_at(path: String) -> AppResult<u32> {
 pub fn list_java_installations() -> Vec<java_detect::JavaInstallation> {
     java_detect::detect_installations()
 }
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadedRuntime {
+    pub component: String,
+    pub major_version: Option<u32>,
+    pub size_bytes: u64,
+}
+
+/// Runtimes Strata itself has downloaded to `java_dir()`, for Settings'
+/// "Downloaded Java runtimes" list.
+#[tauri::command]
+pub fn list_downloaded_runtimes() -> AppResult<Vec<DownloadedRuntime>> {
+    let dir = crate::paths::java_dir();
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Ok(Vec::new());
+    };
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            continue;
+        }
+        let component = entry.file_name().to_string_lossy().to_string();
+        out.push(DownloadedRuntime {
+            major_version: java_runtime::component_major_version(&component),
+            size_bytes: crate::fsutil::dir_size(&entry.path()),
+            component,
+        });
+    }
+    out.sort_by(|a, b| b.major_version.cmp(&a.major_version));
+    Ok(out)
+}
+
+/// Deletes one downloaded runtime; a launch that needs it again just
+/// re-downloads, so this is safe to allow any time.
+#[tauri::command]
+pub fn delete_downloaded_runtime(component: String) -> AppResult<()> {
+    let dir = crate::paths::java_dir().join(&component);
+    if dir.exists() {
+        std::fs::remove_dir_all(dir)?;
+    }
+    Ok(())
+}
