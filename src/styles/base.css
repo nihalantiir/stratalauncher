@@ -954,10 +954,6 @@ button {
   white-space: nowrap;
   min-width: 0;
 }
-.loader-opt-icon {
-  width: 20px;
-  height: 20px;
-}
 /* A small square icon-only badge for a genuinely binary, rare state (crashed
    last session): no inline text, the real message shows on hover via
    `title` instead, same "badge is for a category, not for text that varies"

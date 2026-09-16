@@ -444,7 +444,6 @@ async function confirmDelete() {
           <h4>{{ t('instances.sectionJava') }}</h4>
           <div class="loader-picker">
             <button type="button" class="loader-opt" :class="{ selected: javaMode === 'auto' }" @click="javaMode = 'auto'">
-              <img src="/loaders/full/openjdk.png" alt="" class="loader-opt-icon" />
               {{ t('instances.javaAuto') }}
               <span class="lo-ver">
                 <template v-if="requiredJava?.majorVersion">{{ t('instances.javaAutoHint', { version: requiredJava.majorVersion }) }}</template>
@@ -452,7 +451,6 @@ async function confirmDelete() {
               </span>
             </button>
             <button type="button" class="loader-opt" :class="{ selected: javaMode === 'custom' }" @click="javaMode = 'custom'">
-              <img src="/loaders/full/openjdk.png" alt="" class="loader-opt-icon" />
               {{ t('instances.javaCustom') }}
               <span class="lo-ver">{{ t('instances.javaCustomHint') }}</span>
             </button>
