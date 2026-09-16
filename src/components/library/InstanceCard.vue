@@ -51,7 +51,7 @@ function onContextMenu(event) {
     </div>
     <div class="card-body">
       <div class="card-text">
-        <p class="cname">{{ instance.name }}</p>
+        <p class="cname" :title="instance.name">{{ instance.name }}</p>
         <div class="card-tags">
           <span class="tag">{{ loaderLabel }}</span>
           <span class="tag mono">{{ instance.mcVersion }}</span>
