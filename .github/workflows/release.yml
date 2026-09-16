@@ -57,11 +57,8 @@ jobs:
       - name: Write latest.json
         shell: pwsh
         run: |
-          $notes = git tag -l --format='%(contents)' "${{ github.ref_name }}"
-          if ([string]::IsNullOrWhiteSpace($notes)) { $notes = "" }
           $manifest = @{
             version = "${{ steps.assemble.outputs.version }}"
-            notes = $notes
             windows = @{
               url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.assemble.outputs.zip_name }}"
               sha256 = "${{ steps.assemble.outputs.sha256 }}"

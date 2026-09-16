@@ -16,8 +16,6 @@ const MANIFEST_URL: &str = "https://github.com/nihalantiir/stratalauncher/releas
 #[derive(Debug, Deserialize)]
 struct Manifest {
     version: String,
-    #[serde(default)]
-    notes: String,
     windows: ManifestPlatform,
 }
 
@@ -31,7 +29,6 @@ struct ManifestPlatform {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
     pub version: String,
-    pub notes: String,
     pub download_url: String,
     pub sha256: String,
 }
@@ -62,7 +59,6 @@ pub async fn check_for_update(state: State<'_, AppState>) -> AppResult<Option<Up
 
     Ok(Some(UpdateInfo {
         version: manifest.version,
-        notes: manifest.notes,
         download_url: manifest.windows.url,
         sha256: manifest.windows.sha256,
     }))
