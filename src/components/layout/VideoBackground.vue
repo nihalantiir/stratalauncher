@@ -83,12 +83,29 @@ watch([reducedMotionSetting, systemPrefersReducedMotion], () => {
   else active.play().catch(() => {});
 });
 
+// A freshly-downloaded file's first read can transiently fail (likely
+// real-time AV scanning it); a moment later it always succeeds.
+const LOAD_RETRY_DELAYS_MS = [500, 1500, 3000];
+
+function loadWithRetry(el, name, retryIndex = 0) {
+  const onError = () => {
+    el.removeEventListener('error', onError);
+    if (retryIndex < LOAD_RETRY_DELAYS_MS.length) {
+      window.setTimeout(() => loadWithRetry(el, name, retryIndex + 1), LOAD_RETRY_DELAYS_MS[retryIndex]);
+    } else if (el === videoA.value || el === videoB.value) {
+      mediaReady.value = false; // out of retries; fall back to the static panorama
+    }
+  };
+  el.addEventListener('error', onError, { once: true });
+  el.src = srcFor(name);
+  el.load();
+  if (!reducedMotion.value) el.play().catch(() => {});
+}
+
 function playActive() {
   const active = videoA.value;
   if (!active) return;
-  active.src = srcFor(currentName);
-  active.load();
-  if (!reducedMotion.value) active.play().catch(() => {});
+  loadWithRetry(active, currentName);
 }
 
 onMounted(async () => {
@@ -131,6 +148,11 @@ async function reroll() {
   incoming.src = srcFor(nextName);
   incoming.load();
   await waitReady(incoming);
+  if (incoming.error) {
+    // A transient first-read failure; don't swap to a broken video.
+    rerolling.value = false;
+    return;
+  }
   if (!reducedMotion.value) {
     try {
       await incoming.play();

@@ -111,8 +111,13 @@ async fn download_and_extract(app: &AppHandle, client: &reqwest::Client, manifes
                 .by_name(&file_name)
                 .map_err(|e| AppError::Other(format!("media archive is missing {file_name}: {e}")))?;
             let out_path = crate::fsutil::safe_join(&videos_dir, &file_name, "media archive")?;
-            let mut out_file = std::fs::File::create(&out_path)?;
+            // Written under a temp name first and renamed in only once
+            // complete, so a status check never sees a half-written file.
+            let tmp_path = out_path.with_extension("part");
+            let mut out_file = std::fs::File::create(&tmp_path)?;
             std::io::copy(&mut entry, &mut out_file)?;
+            drop(out_file);
+            std::fs::rename(&tmp_path, &out_path)?;
         }
     }
     let _ = tokio::fs::remove_file(&zip_path).await;
