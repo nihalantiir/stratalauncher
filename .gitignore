@@ -38,3 +38,7 @@ updater/target
 # Real API keys for release builds, baked in at compile time by build.rs.
 # Never commit this — see src-tauri/secrets.release.env.example.
 src-tauri/secrets.release.env
+
+# Video source files: too large for the repo, published manually to the
+# media-v1 release instead. See media-assets/videos/README.md.
+media-assets/videos/*.mp4
