@@ -1413,7 +1413,7 @@ button {
   padding: 24px;
 }
 .modal {
-  background: var(--surface-strong);
+  background: var(--surface-overlay);
   border: 1px solid var(--border-strong);
   border-radius: 16px;
   width: 100%;
