@@ -2,9 +2,10 @@
 import { ref, computed, watch, onMounted, onActivated } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useInstancesStore } from '../stores/instances';
 import { useVersionsStore } from '../stores/versions';
-import { getRequiredJava, probeJavaAt } from '../api/java';
+import { getRequiredJava, probeJavaAt, listJavaInstallations } from '../api/java';
 import { listWorlds } from '../api/worlds';
 import { getAppSettings, getRecommendedMemoryMb } from '../api/appSettings';
 import { parseVersionKey, compareVersionKeys, resolveTargetVersion } from '../lib/versionMath';
@@ -26,6 +27,8 @@ const groupName = ref('');
 const javaPath = ref('');
 const javaMode = ref('auto');
 const skipJavaCheck = ref(false);
+const detectedJava = ref([]);
+const detectingJava = ref(false);
 
 // Memory: `memoryOverride` decides whether this instance's own numbers are sent, or `null` (inherit the global
 // default) instead. Without this flag, saving any unrelated field would silently hardcode whatever the sliders last displayed.
@@ -187,6 +190,22 @@ async function loadRequiredJava() {
   }
 }
 
+async function loadDetectedJava() {
+  detectingJava.value = true;
+  try {
+    detectedJava.value = await listJavaInstallations();
+  } catch {
+    detectedJava.value = [];
+  } finally {
+    detectingJava.value = false;
+  }
+}
+
+async function browseForJava() {
+  const path = await open({ multiple: false, filters: [{ name: 'Java', extensions: ['exe'] }] });
+  if (typeof path === 'string') javaPath.value = path;
+}
+
 async function loadWorlds() {
   if (!inst.value) return;
   try {
@@ -201,6 +220,7 @@ onMounted(async () => {
   loadFromInstance();
   loadRequiredJava();
   loadWorlds();
+  loadDetectedJava();
   if (!versions.manifest) versions.fetch();
 });
 // Kept alive across navigation (see App.vue); re-sync whenever this page is shown again, since the
@@ -424,6 +444,7 @@ async function confirmDelete() {
           <h4>{{ t('instances.sectionJava') }}</h4>
           <div class="loader-picker">
             <button type="button" class="loader-opt" :class="{ selected: javaMode === 'auto' }" @click="javaMode = 'auto'">
+              <img src="/loaders/full/openjdk.png" alt="" class="loader-opt-icon" />
               {{ t('instances.javaAuto') }}
               <span class="lo-ver">
                 <template v-if="requiredJava?.majorVersion">{{ t('instances.javaAutoHint', { version: requiredJava.majorVersion }) }}</template>
@@ -431,19 +452,17 @@ async function confirmDelete() {
               </span>
             </button>
             <button type="button" class="loader-opt" :class="{ selected: javaMode === 'custom' }" @click="javaMode = 'custom'">
+              <img src="/loaders/full/openjdk.png" alt="" class="loader-opt-icon" />
               {{ t('instances.javaCustom') }}
               <span class="lo-ver">{{ t('instances.javaCustomHint') }}</span>
             </button>
           </div>
 
           <template v-if="javaMode === 'custom'">
-            <input
-              id="inst-settings-java"
-              v-model="javaPath"
-              class="field mono"
-              style="margin-top: 10px"
-              :placeholder="t('instances.javaPathPlaceholder')"
-            />
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <input id="inst-settings-java" v-model="javaPath" class="field mono" style="flex: 1" :placeholder="t('instances.javaPathPlaceholder')" />
+              <button class="btn btn-ghost btn-sm" type="button" @click="browseForJava">{{ t('instances.javaBrowse') }}</button>
+            </div>
             <p v-if="javaProbe?.error" class="java-warning">{{ t('instances.javaProbeFailed') }}</p>
             <p v-else-if="javaMismatch" class="java-warning">
               {{ t('instances.javaMismatch', { actual: javaProbe.majorVersion, required: requiredJava.majorVersion }) }}
@@ -451,6 +470,31 @@ async function confirmDelete() {
             <p v-else-if="javaProbe?.majorVersion" class="java-ok">
               {{ t('instances.javaProbeOk', { version: javaProbe.majorVersion }) }}
             </p>
+
+            <div class="detected-java-head">
+              <label class="field-label settings-field-label">{{ t('instances.javaDetectedLabel') }}</label>
+              <button class="btn btn-ghost btn-sm" type="button" :disabled="detectingJava" @click="loadDetectedJava">
+                <span v-if="detectingJava" class="spinner"></span>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" /></svg>
+                {{ t('instances.javaRescan') }}
+              </button>
+            </div>
+            <p v-if="!detectingJava && detectedJava.length === 0" class="hint">{{ t('instances.javaNoneDetected') }}</p>
+            <div v-else class="component-list">
+              <button
+                v-for="j in detectedJava"
+                :key="j.path"
+                type="button"
+                class="component-row detected-java-item"
+                :class="{ selected: j.path === javaPath }"
+                :title="j.path"
+                @click="javaPath = j.path"
+              >
+                <img src="/loaders/full/openjdk.png" alt="" class="component-icon" />
+                <span class="component-name">{{ j.source }} · <span class="mono">{{ j.path }}</span></span>
+                <span class="component-version mono">{{ t('instances.javaDetectedVersion', { version: j.majorVersion }) }}</span>
+              </button>
+            </div>
           </template>
 
           <label class="checkbox-row" style="margin-top: 18px">

@@ -1,5 +1,5 @@
 use crate::error::{AppError, AppResult};
-use crate::minecraft::{java_runtime, launch, manifest};
+use crate::minecraft::{java_detect, java_runtime, launch, manifest};
 use crate::state::AppState;
 use serde::Serialize;
 use tauri::State;
@@ -32,4 +32,10 @@ pub async fn get_required_java(state: State<'_, AppState>, mc_version: String) -
 #[tauri::command]
 pub fn probe_java_at(path: String) -> AppResult<u32> {
     launch::probe_java_major_version(std::path::Path::new(&path))
+}
+
+/// Real Java installs already on the system, for the Custom picker.
+#[tauri::command]
+pub fn list_java_installations() -> Vec<java_detect::JavaInstallation> {
+    java_detect::detect_installations()
 }

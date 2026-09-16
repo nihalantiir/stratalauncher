@@ -1,4 +1,5 @@
 pub mod download;
+pub mod java_detect;
 pub mod java_runtime;
 pub mod launch;
 pub mod loaders;

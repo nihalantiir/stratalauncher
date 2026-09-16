@@ -44,6 +44,7 @@ dotenvy = "0.15"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.60", features = ["Win32_System_SystemInformation"] }
+winreg = "0.55"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
