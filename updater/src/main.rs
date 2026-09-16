@@ -93,8 +93,18 @@ fn old_path_for(target_exe: &Path) -> PathBuf {
     PathBuf::from(name)
 }
 
+/// `rename()` can't cross drive letters on Windows (the new exe is
+/// extracted under Temp, which may not share a drive with the install).
+fn rename_or_copy(from: &Path, to: &Path) -> std::io::Result<()> {
+    if std::fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    std::fs::copy(from, to)?;
+    std::fs::remove_file(from)
+}
+
 /// Renames target_exe aside, moves new_exe into place, retrying since a
-/// fresh file lock is transient; rolls back if the second rename fails.
+/// fresh file lock is transient; rolls back if the second move fails.
 fn swap_files(new_exe: &Path, target_exe: &Path) -> Result<(), String> {
     let old_exe = old_path_for(target_exe);
     const MAX_ATTEMPTS: u32 = 10;
@@ -103,16 +113,16 @@ fn swap_files(new_exe: &Path, target_exe: &Path) -> Result<(), String> {
     let mut last_error = String::new();
 
     for attempt in 1..=MAX_ATTEMPTS {
-        if let Err(e) = std::fs::rename(target_exe, &old_exe) {
+        if let Err(e) = rename_or_copy(target_exe, &old_exe) {
             last_error = format!("attempt {attempt}: failed to rename target exe aside: {e}");
             std::thread::sleep(RETRY_DELAY);
             continue;
         }
 
-        if let Err(e) = std::fs::rename(new_exe, target_exe) {
+        if let Err(e) = rename_or_copy(new_exe, target_exe) {
             last_error = format!("attempt {attempt}: failed to move new exe into place: {e}");
             // Best-effort rollback so the app isn't left with no exe at all.
-            let _ = std::fs::rename(&old_exe, target_exe);
+            let _ = rename_or_copy(&old_exe, target_exe);
             std::thread::sleep(RETRY_DELAY);
             continue;
         }
