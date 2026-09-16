@@ -1,0 +1,39 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.pdb
+
+# Any stray env file, anywhere (defense in depth; see the specific
+# src-tauri paths below for where real keys actually live).
+.env
+.env.*
+
+# Rust build output (also holds the dev .env with real API keys, see
+# src-tauri/src/config.rs)
+src-tauri/target
+
+# Real API keys for release builds, baked in at compile time by build.rs.
+# Never commit this — see src-tauri/secrets.release.env.example.
+src-tauri/secrets.release.env

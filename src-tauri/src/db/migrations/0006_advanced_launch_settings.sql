@@ -1,0 +1,13 @@
+ALTER TABLE instances ADD COLUMN min_memory_mb INTEGER;
+ALTER TABLE instances ADD COLUMN window_width INTEGER;
+ALTER TABLE instances ADD COLUMN window_height INTEGER;
+ALTER TABLE instances ADD COLUMN window_maximized INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE instances ADD COLUMN skip_java_check INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE instances ADD COLUMN env_vars TEXT;
+ALTER TABLE instances ADD COLUMN pre_launch_cmd TEXT;
+ALTER TABLE instances ADD COLUMN wrapper_cmd TEXT;
+ALTER TABLE instances ADD COLUMN post_exit_cmd TEXT;
+ALTER TABLE instances ADD COLUMN console_mode TEXT NOT NULL DEFAULT 'never';
+ALTER TABLE instances ADD COLUMN launcher_behavior TEXT NOT NULL DEFAULT 'keep_open';
+ALTER TABLE instances ADD COLUMN quick_play_mode TEXT NOT NULL DEFAULT 'off';
+ALTER TABLE instances ADD COLUMN quick_play_target TEXT;

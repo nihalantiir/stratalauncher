@@ -1,0 +1,40 @@
+/* Minecraft Ten + Noto Sans: real files sourced from Mojang's own
+   web-theme-bootstrap repo (github.com/Mojang/web-theme-bootstrap), under
+   the bundled OFL 1.1 license (public/fonts/LICENSE_OFL.txt) which
+   explicitly permits redistribution with software. Used selectively for
+   Minecraft-flavored brand moments, not as the app's general UI font. */
+@font-face {
+  font-family: 'Minecraft Ten';
+  src: url('/fonts/MinecraftTen.woff') format('woff'), url('/fonts/MinecraftTen.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Italic.woff2') format('woff2');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-BoldItalic.woff2') format('woff2');
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
