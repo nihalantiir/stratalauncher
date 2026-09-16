@@ -9,3 +9,5 @@ export const getDataDirInfo = () => invoke('get_data_dir_info');
 export const setPendingDataDir = (path) => invoke('set_pending_data_dir', { path });
 
 export const resetDataDir = () => invoke('reset_data_dir');
+
+export const restartApp = () => invoke('restart_app');

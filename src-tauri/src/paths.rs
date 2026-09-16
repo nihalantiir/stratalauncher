@@ -46,11 +46,12 @@ fn default_dir() -> PathBuf {
     dir
 }
 
-/// A tiny bootstrap file at a location that never moves (the OS config dir,
-/// not the data dir itself, since that's what this file redirects).
+/// A tiny bootstrap file kept next to the exe (like `portable_dir()`) so two
+/// separate installs never share one redirect; falls back to a per-install file under the OS config dir if that folder isn't writable.
 mod bootstrap {
-    use super::PathBuf;
+    use super::{is_writable, PathBuf};
     use serde::{Deserialize, Serialize};
+    use std::sync::OnceLock;
 
     #[derive(Debug, Default, Serialize, Deserialize)]
     pub struct Bootstrap {
@@ -64,9 +65,28 @@ mod bootstrap {
         pub pending_dir: Option<PathBuf>,
     }
 
-    fn file_path() -> PathBuf {
-        let base = dirs::config_dir().unwrap_or_else(std::env::temp_dir);
-        base.join("Strata").join("bootstrap.json")
+    static PATH: OnceLock<PathBuf> = OnceLock::new();
+
+    fn install_key() -> String {
+        use std::hash::{Hash, Hasher};
+        let exe = std::env::current_exe().unwrap_or_default();
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        exe.hash(&mut hasher);
+        format!("{:016x}", hasher.finish())
+    }
+
+    fn file_path() -> &'static PathBuf {
+        PATH.get_or_init(|| {
+            if let Some(exe) = std::env::current_exe().ok() {
+                if let Some(dir) = exe.parent() {
+                    if is_writable(dir) {
+                        return dir.join("bootstrap.json");
+                    }
+                }
+            }
+            let base = dirs::config_dir().unwrap_or_else(std::env::temp_dir);
+            base.join("Strata").join(format!("bootstrap-{}.json", install_key()))
+        })
     }
 
     pub fn load() -> Bootstrap {

@@ -13,7 +13,7 @@ import { useAccountsStore } from '../stores/accounts';
 import GlassSelect from '../components/common/GlassSelect.vue';
 import LoginModal from '../components/auth/LoginModal.vue';
 import SkinHead from '../components/common/SkinHead.vue';
-import { getAppSettings, updateAppSettings, getDataDirInfo, setPendingDataDir, resetDataDir } from '../api/appSettings';
+import { getAppSettings, updateAppSettings, getDataDirInfo, setPendingDataDir, resetDataDir, restartApp } from '../api/appSettings';
 import { checkForUpdate, installUpdate } from '../api/updater';
 import pkg from '../../package.json';
 
@@ -165,9 +165,18 @@ async function save() {
 const dataDirInfo = ref(null);
 const choosingDir = ref(false);
 const dirActionError = ref(null);
+const restartingForDataDir = ref(false);
 
 async function loadDataDirInfo() {
   dataDirInfo.value = await getDataDirInfo();
+}
+
+// Data lives at the resolved path for the rest of this run regardless of the
+// change just queued, so a live restart is the only way to actually move to it.
+async function restartForDataDirChange() {
+  restartingForDataDir.value = true;
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await restartApp();
 }
 
 async function chooseDataDir() {
@@ -177,10 +186,9 @@ async function chooseDataDir() {
   choosingDir.value = true;
   try {
     await setPendingDataDir(folder);
-    await loadDataDirInfo();
+    await restartForDataDirChange();
   } catch (e) {
     dirActionError.value = String(e);
-  } finally {
     choosingDir.value = false;
   }
 }
@@ -190,10 +198,9 @@ async function resetDataDirToDefault() {
   choosingDir.value = true;
   try {
     await resetDataDir();
-    await loadDataDirInfo();
+    await restartForDataDirChange();
   } catch (e) {
     dirActionError.value = String(e);
-  } finally {
     choosingDir.value = false;
   }
 }
@@ -404,7 +411,11 @@ onBeforeUnmount(() => {
           </p>
           <div v-if="dirActionError" class="error-box" style="margin-top: 10px">{{ dirActionError }}</div>
 
-          <div style="display: flex; gap: 10px; margin-top: 16px">
+          <p v-if="restartingForDataDir" class="hint inherit-note">
+            <span class="spinner"></span>
+            {{ t('settings.storageRestartingNotice') }}
+          </p>
+          <div v-else style="display: flex; gap: 10px; margin-top: 16px">
             <button class="btn btn-mineral" type="button" :disabled="choosingDir" @click="chooseDataDir">
               {{ t('settings.storageChange') }}
             </button>
@@ -418,7 +429,7 @@ onBeforeUnmount(() => {
               {{ t('settings.storageReset') }}
             </button>
           </div>
-          <p class="hint" style="margin-top: 14px">{{ t('settings.storageRestartHint') }}</p>
+          <p v-if="!restartingForDataDir" class="hint" style="margin-top: 14px">{{ t('settings.storageRestartHint') }}</p>
         </div>
 
         <div v-else-if="active === 'updates'" class="field-group">

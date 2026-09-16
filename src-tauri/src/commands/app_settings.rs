@@ -142,3 +142,12 @@ pub fn set_pending_data_dir(path: String) -> AppResult<()> {
 pub fn reset_data_dir() -> AppResult<()> {
     crate::paths::clear_pending_data_dir().map_err(crate::error::AppError::Io)
 }
+
+/// Relaunches the exact same exe as a fresh process, then exits this one.
+#[tauri::command]
+pub fn restart_app(app: tauri::AppHandle) -> AppResult<()> {
+    let exe = std::env::current_exe()?;
+    std::process::Command::new(exe).spawn()?;
+    app.exit(0);
+    Ok(())
+}
