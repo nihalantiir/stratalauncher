@@ -1,6 +1,17 @@
 //! Shared filesystem helpers used by more than one module.
 
-use std::path::Path;
+use crate::error::{AppError, AppResult};
+use std::path::{Component, Path, PathBuf};
+
+/// A zip entry's path is third-party input; rejects anything that could
+/// escape `dest_root` via `..`, an absolute path, or a drive letter.
+pub fn safe_join(dest_root: &Path, entry_name: &str, context: &str) -> AppResult<PathBuf> {
+    let rel = Path::new(entry_name);
+    if rel.is_absolute() || rel.components().any(|c| matches!(c, Component::ParentDir | Component::Prefix(_))) {
+        return Err(AppError::Other(format!("unsafe path in {context}: {entry_name}")));
+    }
+    Ok(dest_root.join(rel))
+}
 
 pub fn copy_dir_recursive(from: &Path, to: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(to)?;

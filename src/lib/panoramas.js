@@ -22,7 +22,7 @@ const VERSION_PANORAMAS = [
   { version: '26.2', file: '26.2.webp' }, // Chaos Cubed
   { version: '26.3', file: '26.3.webp' }, // Wilderness Bound
 ];
-const DEFAULT_PANORAMAS = ['default-1.webp', 'default-2.webp', 'default-3.webp'];
+export const DEFAULT_PANORAMAS = ['default-1.webp', 'default-2.webp', 'default-3.webp'];
 
 function hashString(s) {
   let h = 0;

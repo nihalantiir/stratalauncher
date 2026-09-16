@@ -3,7 +3,8 @@
     "name": "Strata Launcher"
   },
   "background": {
-    "shuffle": "Changer l'arrière-plan"
+    "shuffle": "Changer l'arrière-plan",
+    "downloadingMedia": "Téléchargement des fonds… {percent}%"
   },
   "sidebar": {
     "library": "Bibliothèque",

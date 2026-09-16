@@ -1,7 +1,7 @@
 //! Installs a `.mrpack` (Modrinth's modpack format): a zip with
 //! `modrinth.index.json` at the root, verified against Modrinth's docs.
 
-use super::{extract_prefixed, read_zip_entry_bytes, safe_join, ResolvedModpackTarget};
+use super::{extract_prefixed, read_zip_entry_bytes, ResolvedModpackTarget};
 use crate::error::AppResult;
 use crate::minecraft::download;
 use serde::Deserialize;
@@ -86,7 +86,7 @@ pub async fn install(app: &AppHandle, client: &reqwest::Client, zip_path: &Path,
     let total = wanted.len();
     download::emit_progress(app, "modpack", 0, total);
     for (i, file) in wanted.into_iter().enumerate() {
-        let dest = safe_join(instance_dir, &file.path)?;
+        let dest = crate::fsutil::safe_join(instance_dir, &file.path, "modpack archive")?;
         let Some(url) = file.downloads.first() else { continue };
         download::download_verified(client, url, &dest, file.hashes.sha1.as_deref()).await?;
         download::emit_progress(app, "modpack", i + 1, total);

@@ -188,6 +188,12 @@ pub fn assets_dir() -> PathBuf {
     data_dir().join("assets")
 }
 
+/// Background videos, downloaded on first launch rather than bundled into
+/// the exe. Unrelated to `assets_dir()`, which is Minecraft's own assets.
+pub fn media_dir() -> PathBuf {
+    data_dir().join("media")
+}
+
 pub fn versions_dir() -> PathBuf {
     data_dir().join("versions")
 }

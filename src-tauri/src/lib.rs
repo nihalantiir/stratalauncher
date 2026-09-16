@@ -44,6 +44,7 @@ pub fn run() {
             // Screenshots render straight off disk via the asset protocol
             // instead of piping bytes through IPC.
             app.asset_protocol_scope().allow_directory(paths::instances_dir(), true)?;
+            app.asset_protocol_scope().allow_directory(paths::media_dir(), true)?;
 
             // Always created, but only relevant when "hide to tray while
             // playing" is on; see commands::launch for show/hide.
@@ -88,6 +89,17 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = sync::run_sync_check(&startup_client, &instances, check_updates).await {
                     launcher_log::warn("sync", format!("startup sync check failed: {e}"));
+                }
+            });
+
+            // Background videos aren't bundled into the exe; fetch them once,
+            // silently, the first time they're missing. The UI falls back to
+            // a static panorama until this finishes.
+            let app_for_media = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let state = app_for_media.state::<AppState>();
+                if let Err(e) = commands::media::download_media(app_for_media.clone(), state).await {
+                    launcher_log::warn("media", format!("background media download failed: {e}"));
                 }
             });
 
@@ -202,6 +214,8 @@ pub fn run() {
             commands::capes::get_cape_catalog,
             commands::updater::check_for_update,
             commands::updater::install_update,
+            commands::media::media_status,
+            commands::media::download_media,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,7 +6,6 @@ use crate::state::AppState;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::{Component, Path, PathBuf};
 use tauri::{AppHandle, State};
 use tokio::io::AsyncWriteExt;
 
@@ -72,16 +71,6 @@ pub async fn check_for_update(state: State<'_, AppState>) -> AppResult<Option<Up
     fetch_update_info(&state.http).await
 }
 
-/// A zip entry's path is third-party input; rejects anything that could
-/// escape `dest_root` via `..`, an absolute path, or a drive letter.
-fn safe_join(dest_root: &Path, entry_name: &str) -> AppResult<PathBuf> {
-    let rel = Path::new(entry_name);
-    if rel.is_absolute() || rel.components().any(|c| matches!(c, Component::ParentDir | Component::Prefix(_))) {
-        return Err(AppError::Other(format!("unsafe path in update archive: {entry_name}")));
-    }
-    Ok(dest_root.join(rel))
-}
-
 #[tauri::command]
 pub async fn install_update(app: AppHandle, state: State<'_, AppState>, download_url: String, sha256: String) -> AppResult<()> {
     let resp = state.http.get(&download_url).send().await?.error_for_status()?;
@@ -118,7 +107,7 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>, download
             let mut entry = archive
                 .by_name(name)
                 .map_err(|e| AppError::Other(format!("update archive is missing {name}: {e}")))?;
-            let out_path = safe_join(&extract_dir, name)?;
+            let out_path = crate::fsutil::safe_join(&extract_dir, name, "update archive")?;
             let mut out_file = std::fs::File::create(&out_path)?;
             std::io::copy(&mut entry, &mut out_file)?;
         }

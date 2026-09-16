@@ -6,7 +6,7 @@ pub mod mrpack;
 
 use crate::error::{AppError, AppResult};
 use std::io::Read;
-use std::path::{Component, Path, PathBuf};
+use std::path::Path;
 
 /// What a pack's manifest says the instance should be created as, resolved
 /// before the instance exists so `create_instance` gets it directly.
@@ -38,16 +38,6 @@ pub fn detect_format(zip_path: &Path) -> AppResult<PackFormat> {
     ))
 }
 
-/// A zip entry's path is third-party input; rejects anything that could
-/// escape `dest_root` via `..`, an absolute path, or a drive letter.
-fn safe_join(dest_root: &Path, entry_name: &str) -> AppResult<PathBuf> {
-    let rel = Path::new(entry_name);
-    if rel.is_absolute() || rel.components().any(|c| matches!(c, Component::ParentDir | Component::Prefix(_))) {
-        return Err(AppError::Other(format!("unsafe path in modpack archive: {entry_name}")));
-    }
-    Ok(dest_root.join(rel))
-}
-
 /// Extracts every entry under `prefix` (e.g. `"overrides/"`) into
 /// `dest_root`, stripping the prefix.
 fn extract_prefixed(archive: &mut zip::ZipArchive<std::fs::File>, prefix: &str, dest_root: &Path) -> AppResult<()> {
@@ -57,7 +47,7 @@ fn extract_prefixed(archive: &mut zip::ZipArchive<std::fs::File>, prefix: &str, 
         if rel.is_empty() {
             continue;
         }
-        let out_path = safe_join(dest_root, rel)?;
+        let out_path = crate::fsutil::safe_join(dest_root, rel, "modpack archive")?;
         if entry.is_dir() {
             std::fs::create_dir_all(&out_path)?;
             continue;

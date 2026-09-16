@@ -7,6 +7,7 @@ pub mod launch;
 pub mod java;
 pub mod loaders;
 pub mod logs;
+pub mod media;
 pub mod migration;
 pub mod modpack;
 pub mod screenshots;

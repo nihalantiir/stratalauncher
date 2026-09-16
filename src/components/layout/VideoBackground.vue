@@ -1,8 +1,12 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import { listen } from '@tauri-apps/api/event';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { useAccessibility, resolveReducedMotion } from '../../composables/useAccessibility';
+import { getMediaStatus } from '../../api/media';
+import { DEFAULT_PANORAMAS } from '../../lib/panoramas';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -22,8 +26,20 @@ const VIDEOS = [
   'serene-snow',
   'tricky-trials',
 ];
-const srcFor = (name) => `/videos/${name}.mp4`;
 const CROSSFADE_MS = 900;
+
+// Not bundled into the exe; downloaded once in the background (see
+// commands::media on the backend). Until they land, a static embedded
+// panorama fills in instead of a blank background.
+const mediaReady = ref(false);
+const mediaDir = ref('');
+const fallbackImage = DEFAULT_PANORAMAS[Math.floor(Math.random() * DEFAULT_PANORAMAS.length)];
+const downloadPercent = ref(0);
+let unlistenProgress = null;
+
+function srcFor(name) {
+  return convertFileSrc(`${mediaDir.value}/${name}.mp4`);
+}
 
 const videoA = ref(null);
 const videoB = ref(null);
@@ -67,16 +83,37 @@ watch([reducedMotionSetting, systemPrefersReducedMotion], () => {
   else active.play().catch(() => {});
 });
 
-onMounted(() => {
+function playActive() {
   const active = videoA.value;
   if (!active) return;
   active.src = srcFor(currentName);
   active.load();
   if (!reducedMotion.value) active.play().catch(() => {});
+}
+
+onMounted(async () => {
+  const status = await getMediaStatus().catch(() => ({ ready: false, dir: '' }));
+  mediaDir.value = status.dir;
+  mediaReady.value = status.ready;
+  if (status.ready) playActive();
+
+  unlistenProgress = await listen('download://progress', (event) => {
+    const p = event.payload;
+    if (p.stage !== 'media') return;
+    downloadPercent.value = p.total ? Math.round((p.completed / p.total) * 100) : 0;
+    if (p.total && p.completed >= p.total) {
+      mediaReady.value = true;
+      playActive();
+    }
+  });
+});
+
+onBeforeUnmount(() => {
+  unlistenProgress?.();
 });
 
 async function reroll() {
-  if (rerolling.value) return;
+  if (rerolling.value || !mediaReady.value) return;
   const incoming = activeIsA.value ? videoB.value : videoA.value;
   const outgoing = activeIsA.value ? videoA.value : videoB.value;
   if (!incoming) return;
@@ -106,15 +143,20 @@ async function reroll() {
 
 <template>
   <div class="video-bg" aria-hidden="true">
-    <video ref="videoA" class="video-bg-el" :class="{ front: activeIsA }" loop muted playsinline disablepictureinpicture></video>
-    <video ref="videoB" class="video-bg-el" :class="{ front: !activeIsA }" loop muted playsinline disablepictureinpicture></video>
+    <img v-if="!mediaReady" class="video-bg-el front" :src="`/panoramas/${fallbackImage}`" alt="" />
+    <video ref="videoA" class="video-bg-el" :class="{ front: mediaReady && activeIsA }" loop muted playsinline disablepictureinpicture></video>
+    <video ref="videoB" class="video-bg-el" :class="{ front: mediaReady && !activeIsA }" loop muted playsinline disablepictureinpicture></video>
     <div class="video-bg-overlay"></div>
     <div class="video-bg-vignette"></div>
     <div class="video-bg-grain"></div>
   </div>
 
+  <div v-if="!mediaReady && downloadPercent > 0" class="media-download-note">
+    {{ t('background.downloadingMedia', { percent: downloadPercent }) }}
+  </div>
+
   <button
-    v-show="route.name === 'library'"
+    v-show="route.name === 'library' && mediaReady"
     class="video-reroll"
     type="button"
     :class="{ spinning: rerolling }"
@@ -174,6 +216,21 @@ async function reroll() {
   opacity: 0.035;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.media-download-note {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 40;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
 }
 
 .video-reroll {
