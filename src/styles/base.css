@@ -1310,9 +1310,8 @@ button {
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.01em;
-  /* The panel bottom-anchors its content in a fixed-height box; an
-     unclamped long name pushes the tags row above the card's own top
-     edge, where overflow: hidden silently clips it. */
+  /* Bottom-anchored fixed-height panel: an unclamped name pushes the
+     tags row above the card's top edge, clipped by overflow: hidden. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
