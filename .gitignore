@@ -40,5 +40,5 @@ updater/target
 src-tauri/secrets.release.env
 
 # Video source files: too large for the repo, published manually to the
-# media-v1 release instead. See media-assets/videos/README.md.
-media-assets/videos/*.mp4
+# media-v1 release instead. See publish-media.ps1.
+media-assets/
