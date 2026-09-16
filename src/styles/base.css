@@ -652,6 +652,13 @@ button {
 .version-opt {
   justify-content: space-between;
 }
+/* .vst-text's ellipsis is right for the trigger (fixed width, always
+   1 line); the dropdown is sized to match that same trigger width, so a
+   longer option label needs to wrap instead of losing words to it. */
+.version-dd .vst-text {
+  white-space: normal;
+  text-overflow: clip;
+}
 .version-opt-type {
   color: var(--text-muted);
   font-weight: 500;
