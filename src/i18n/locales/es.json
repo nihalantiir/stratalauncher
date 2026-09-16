@@ -382,7 +382,7 @@
     "sidebarPersistentHint": "Desactivado por defecto: la barra lateral muestra solo iconos y se expande al pasar el cursor por encima.",
     "comingSoonBadge": "Pronto",
     "updatesHeading": "Actualizaciones",
-    "updatesDormantHint": "Aún no está activo. Estos ajustes ya están listos para cuando lo esté.",
+    "updatesHint": "Strata puede buscar nuevas versiones en GitHub e instalarlas directamente.",
     "autoCheckUpdates": "Comprobar actualizaciones automáticamente",
     "updateIntervalLabel": "Comprobar cada",
     "updateIntervalHourly": "Cada hora",

@@ -382,7 +382,7 @@
     "sidebarPersistentHint": "Off by default: the sidebar shows icons only and expands while you hover over it.",
     "comingSoonBadge": "Soon",
     "updatesHeading": "Updates",
-    "updatesDormantHint": "Not active yet. These settings are ready for when it is.",
+    "updatesHint": "Strata can check GitHub for new releases and install them in place.",
     "autoCheckUpdates": "Automatically check for updates",
     "updateIntervalLabel": "Check every",
     "updateIntervalHourly": "Every hour",

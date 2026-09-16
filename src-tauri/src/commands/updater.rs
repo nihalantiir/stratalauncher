@@ -11,7 +11,10 @@ use std::path::{Component, Path, PathBuf};
 use tauri::{AppHandle, State};
 use tokio::io::AsyncWriteExt;
 
-const MANIFEST_URL: &str = "https://github.com/nihalantiir/stratalauncher/releases/latest/download/latest.json";
+fn manifest_url() -> String {
+    let repo = crate::config::update_repo().unwrap_or_else(|| "nihalantiir/stratalauncher".to_string());
+    format!("https://github.com/{repo}/releases/latest/download/latest.json")
+}
 
 #[derive(Debug, Deserialize)]
 struct Manifest {
@@ -25,7 +28,7 @@ struct ManifestPlatform {
     sha256: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
     pub version: String,
@@ -48,9 +51,11 @@ fn is_newer(candidate: &str, current: &str) -> bool {
     false
 }
 
-#[tauri::command]
-pub async fn check_for_update(state: State<'_, AppState>) -> AppResult<Option<UpdateInfo>> {
-    let manifest: Manifest = state.http.get(MANIFEST_URL).send().await?.error_for_status()?.json().await?;
+/// Shared by the on-demand Settings command below and the periodic
+/// background check in `sync.rs`, so both ever only know one way to decide
+/// "is there a real update" (fixed manifest URL, real semver-ish compare).
+pub async fn fetch_update_info(client: &reqwest::Client) -> AppResult<Option<UpdateInfo>> {
+    let manifest: Manifest = client.get(manifest_url()).send().await?.error_for_status()?.json().await?;
     let current = env!("CARGO_PKG_VERSION");
 
     if !is_newer(&manifest.version, current) {
@@ -62,6 +67,11 @@ pub async fn check_for_update(state: State<'_, AppState>) -> AppResult<Option<Up
         download_url: manifest.windows.url,
         sha256: manifest.windows.sha256,
     }))
+}
+
+#[tauri::command]
+pub async fn check_for_update(state: State<'_, AppState>) -> AppResult<Option<UpdateInfo>> {
+    fetch_update_info(&state.http).await
 }
 
 /// A zip entry's path is third-party input; rejects anything that could

@@ -382,7 +382,7 @@
     "sidebarPersistentHint": "Domyślnie wyłączone: panel boczny pokazuje same ikony i rozwija się po najechaniu kursorem.",
     "comingSoonBadge": "Wkrótce",
     "updatesHeading": "Aktualizacje",
-    "updatesDormantHint": "Jeszcze nieaktywne. Te ustawienia są gotowe na czas, gdy to się zmieni.",
+    "updatesHint": "Strata może sprawdzać nowe wersje na GitHubie i instalować je na miejscu.",
     "autoCheckUpdates": "Automatycznie sprawdzaj aktualizacje",
     "updateIntervalLabel": "Sprawdzaj co",
     "updateIntervalHourly": "Co godzinę",

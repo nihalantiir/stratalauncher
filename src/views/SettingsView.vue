@@ -248,6 +248,7 @@ onMounted(async () => {
   loadSettings();
   loadDataDirInfo();
   accounts.refresh();
+  checkUpdate();
   availableUploadTargets.value = await listUploadTargets();
   unlistenUpdateProgress = await listen('download://progress', (event) => {
     const p = event.payload;
@@ -284,7 +285,6 @@ onBeforeUnmount(() => {
             <polyline points="21 3 21 9 15 9" />
           </svg>
           <span>{{ t('settings.updatesHeading') }}</span>
-          <span class="nav-badge">{{ t('settings.comingSoonBadge') }}</span>
         </button>
 
         <div class="nav-group-label">{{ t('settings.minecraftGroupLabel') }}</div>
@@ -422,11 +422,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-else-if="active === 'updates'" class="field-group">
-          <div class="section-heading-row">
-            <h4>{{ t('settings.updatesHeading') }}</h4>
-            <span class="tag">{{ t('settings.comingSoonBadge') }}</span>
-          </div>
-          <p class="hint">{{ t('settings.updatesDormantHint') }}</p>
+          <h4>{{ t('settings.updatesHeading') }}</h4>
+          <p class="hint">{{ t('settings.updatesHint') }}</p>
 
           <label class="checkbox-row">
             <input type="checkbox" v-model="autoCheckUpdates" />
@@ -442,6 +439,31 @@ onBeforeUnmount(() => {
               style="width: 220px"
             />
           </template>
+
+          <div class="update-block" style="margin-top: 20px">
+            <button v-if="updateState === 'idle'" class="btn btn-ghost" type="button" @click="checkUpdate">
+              {{ t('settings.updateCheck') }}
+            </button>
+
+            <div v-else-if="updateState === 'checking'" class="hint update-check-row">
+              <span class="spinner"></span>
+              {{ t('settings.updateChecking') }}
+            </div>
+
+            <p v-else-if="updateState === 'upToDate'" class="hint">{{ t('settings.updateUpToDate') }}</p>
+
+            <p v-else-if="updateState === 'error'" class="hint">{{ t('settings.updateError') }}</p>
+
+            <div v-else-if="updateState === 'available'">
+              <p class="hint">{{ t('settings.updateAvailable', { version: updateInfo?.version }) }}</p>
+              <button class="btn btn-mineral" type="button" :disabled="installing" @click="doInstallUpdate">
+                <span v-if="installing" class="spinner"></span>
+                {{ installing ? t('settings.updateInstalling') : t('settings.updateInstallButton') }}
+              </button>
+              <p v-if="installing && installProgress" class="hint">{{ installProgressPercent }}%</p>
+              <div v-if="installError" class="error-box" style="margin-top: 10px">{{ installError }}</div>
+            </div>
+          </div>
         </div>
 
         <div v-else-if="active === 'window'" class="field-group">
@@ -609,30 +631,6 @@ onBeforeUnmount(() => {
             <span class="about-sep" aria-hidden="true">•</span>
             <span>{{ t('settings.authorLabel', { author: 'Nihalantiir' }) }}</span>
           </div>
-          <div class="about-update">
-            <button v-if="updateState === 'idle'" class="btn btn-ghost" type="button" @click="checkUpdate">
-              {{ t('settings.updateCheck') }}
-            </button>
-
-            <div v-else-if="updateState === 'checking'" class="hint about-update-row">
-              <span class="spinner"></span>
-              {{ t('settings.updateChecking') }}
-            </div>
-
-            <p v-else-if="updateState === 'upToDate'" class="hint">{{ t('settings.updateUpToDate') }}</p>
-
-            <p v-else-if="updateState === 'error'" class="hint">{{ t('settings.updateError') }}</p>
-
-            <div v-else-if="updateState === 'available'">
-              <p class="hint">{{ t('settings.updateAvailable', { version: updateInfo?.version }) }}</p>
-              <button class="btn btn-mineral" type="button" :disabled="installing" @click="doInstallUpdate">
-                <span v-if="installing" class="spinner"></span>
-                {{ installing ? t('settings.updateInstalling') : t('settings.updateInstallButton') }}
-              </button>
-              <p v-if="installing && installProgress" class="hint">{{ installProgressPercent }}%</p>
-              <div v-if="installError" class="error-box" style="margin-top: 10px">{{ installError }}</div>
-            </div>
-          </div>
 
           <div class="about-disclosure">
             <p>{{ t('settings.disclosureLine1') }}</p>
@@ -691,13 +689,12 @@ onBeforeUnmount(() => {
   font-size: 12px;
   margin-left: 6px;
 }
-.about-update {
+.update-block {
   margin-bottom: 24px;
 }
-.about-update-row {
+.update-check-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
 }
 </style>

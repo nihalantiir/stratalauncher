@@ -152,12 +152,6 @@ async fn check_loader_versions(client: &reqwest::Client, instances: &[Instance],
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct GithubRelease {
-    tag_name: String,
-    html_url: String,
-}
-
 /// Whether enough time has passed since the last check to run another one,
 /// per the user's configured interval. A fresh install is always due.
 pub fn update_check_due(interval_hours: u32) -> bool {
@@ -172,8 +166,10 @@ pub fn update_check_due(interval_hours: u32) -> bool {
     elapsed.num_hours() >= interval_hours as i64
 }
 
-/// Stable-channel only. Skipped until `STRATA_UPDATE_REPO` is set; callable
-/// standalone or as part of `run_sync_check`.
+/// Same manifest/checksum path the Settings page's on-demand "Check for
+/// Updates" button uses (`commands::updater::fetch_update_info`), so a
+/// background-found update and a manually-checked one are never two
+/// different answers. Callable standalone or as part of `run_sync_check`.
 pub async fn check_launcher_update(client: &reqwest::Client) -> AppResult<()> {
     let mut state = load_state();
     let now = chrono::Utc::now().to_rfc3339();
@@ -183,50 +179,27 @@ pub async fn check_launcher_update(client: &reqwest::Client) -> AppResult<()> {
 }
 
 async fn check_launcher_update_inner(client: &reqwest::Client, state: &mut SyncState, now: &str) {
-    let Some(repo) = crate::config::update_repo() else {
+    let Ok(Some(info)) = crate::commands::updater::fetch_update_info(client).await else {
         return;
     };
 
-    let Ok(resp) = client
-        .get(format!("https://api.github.com/repos/{repo}/releases/latest"))
-        .header("User-Agent", concat!("StrataLauncher/", env!("CARGO_PKG_VERSION")))
-        .send()
-        .await
-    else {
-        return;
-    };
-    let Ok(resp) = resp.error_for_status() else {
-        return;
-    };
-    let Ok(release) = resp.json::<GithubRelease>().await else {
-        return;
-    };
-
-    let current = env!("CARGO_PKG_VERSION");
-    let tag = release.tag_name.trim_start_matches('v');
-    if tag == current {
-        state.last_seen_launcher_version = Some(tag.to_string());
-        return;
+    if state.last_seen_launcher_version.as_deref() == Some(info.version.as_str()) {
+        return; // already notified for this exact version
     }
 
-    if let Some(prev) = &state.last_seen_launcher_version {
-        if prev == tag {
-            return; // already notified for this exact tag
-        }
-    }
-
+    let repo = crate::config::update_repo().unwrap_or_else(|| "nihalantiir/stratalauncher".to_string());
     push_notification(
         state,
         Notification {
-            id: format!("launcher-update-{tag}"),
-            title: format!("Strata {tag} is available"),
-            body: format!("You're on {current}."),
+            id: format!("launcher-update-{}", info.version),
+            title: format!("Strata {} is available", info.version),
+            body: format!("You're on {}.", env!("CARGO_PKG_VERSION")),
             created_at: now.to_string(),
             instance_id: None,
-            url: Some(release.html_url),
+            url: Some(format!("https://github.com/{repo}/releases/tag/v{}", info.version)),
         },
     );
-    state.last_seen_launcher_version = Some(tag.to_string());
+    state.last_seen_launcher_version = Some(info.version);
 }
 
 /// Runs every check and persists the result; the first run just seeds the

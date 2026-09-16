@@ -382,7 +382,7 @@
     "sidebarPersistentHint": "Désactivé par défaut : la barre latérale affiche seulement les icônes et se développe au survol.",
     "comingSoonBadge": "Bientôt",
     "updatesHeading": "Mises à jour",
-    "updatesDormantHint": "Pas encore actif. Ces réglages sont prêts pour quand ça le sera.",
+    "updatesHint": "Strata peut chercher de nouvelles versions sur GitHub et les installer directement.",
     "autoCheckUpdates": "Vérifier automatiquement les mises à jour",
     "updateIntervalLabel": "Vérifier toutes les",
     "updateIntervalHourly": "Toutes les heures",

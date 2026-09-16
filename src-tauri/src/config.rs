@@ -16,10 +16,11 @@ pub fn curseforge_api_key() -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-/// GitHub repo ("owner/repo") to check for launcher self-updates, once Strata
-/// has one to publish releases from. Not a secret, no build-time path needed.
+/// GitHub repo ("owner/repo") releases and repo-hosted data (the cape
+/// catalog, the update manifest) are fetched from. Env var override is for
+/// testing against a fork; not a secret, no build-time path needed.
 pub fn update_repo() -> Option<String> {
-    std::env::var("STRATA_UPDATE_REPO").ok().filter(|s| !s.is_empty())
+    Some(std::env::var("STRATA_UPDATE_REPO").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| "nihalantiir/stratalauncher".to_string()))
 }
 
 /// Pastebin.com API key for the Logs page's upload option, from

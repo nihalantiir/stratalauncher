@@ -14,6 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify tag matches Cargo.toml version
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+          $cargoVersion = (Select-String -Path src-tauri/Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          if ($tagVersion -ne $cargoVersion) {
+            Write-Error "Tag ${{ github.ref_name }} does not match src-tauri/Cargo.toml version $cargoVersion. Bump the version files and commit before tagging."
+            exit 1
+          }
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
