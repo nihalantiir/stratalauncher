@@ -45,6 +45,19 @@ jobs:
             src-tauri -> target
             updater -> target
 
+      - name: Write release secrets
+        shell: pwsh
+        env:
+          STRATA_MS_CLIENT_ID: ${{ secrets.STRATA_MS_CLIENT_ID }}
+          STRATA_CURSEFORGE_API_KEY: ${{ secrets.STRATA_CURSEFORGE_API_KEY }}
+          STRATA_PASTEBIN_API_KEY: ${{ secrets.STRATA_PASTEBIN_API_KEY }}
+        run: |
+          @"
+          STRATA_MS_CLIENT_ID=$env:STRATA_MS_CLIENT_ID
+          STRATA_CURSEFORGE_API_KEY=$env:STRATA_CURSEFORGE_API_KEY
+          STRATA_PASTEBIN_API_KEY=$env:STRATA_PASTEBIN_API_KEY
+          "@ | Set-Content -Path src-tauri/secrets.release.env -Encoding utf8
+
       - name: Build main app
         # cargo build alone never enables Tauri's custom-protocol feature,
         # which is what actually loads embedded assets instead of devUrl.
