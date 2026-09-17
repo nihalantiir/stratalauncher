@@ -57,6 +57,7 @@ const windowWidth = ref(925);
 const windowHeight = ref(530);
 const windowMaximized = ref(false);
 const recommendedMemoryMb = ref(2048);
+const memoryOverride = ref(false);
 const defaultMemoryMb = ref(2048);
 const defaultMinMemoryMb = ref(1024);
 const jvmArgs = ref('');
@@ -89,14 +90,15 @@ const updateIntervalOptions = computed(() => [
 
 const defaultMemoryLabel = computed(() => `${(defaultMemoryMb.value / 1024).toFixed(1)} GB`);
 const defaultMinMemoryLabel = computed(() => `${(defaultMinMemoryMb.value / 1024).toFixed(1)} GB`);
-const memoryTooLow = computed(() => defaultMinMemoryMb.value > defaultMemoryMb.value);
+const memoryTooLow = computed(() => memoryOverride.value && defaultMinMemoryMb.value > defaultMemoryMb.value);
 
 function applyFromSettings(s) {
   windowWidth.value = s.windowWidth ?? 925;
   windowHeight.value = s.windowHeight ?? 530;
   windowMaximized.value = !!s.windowMaximized;
+  memoryOverride.value = s.defaultMemoryMb != null || s.defaultMinMemoryMb != null;
   defaultMemoryMb.value = s.defaultMemoryMb ?? recommendedMemoryMb.value;
-  defaultMinMemoryMb.value = s.defaultMinMemoryMb ?? recommendedMemoryMb.value;
+  defaultMinMemoryMb.value = s.defaultMinMemoryMb ?? defaultMemoryMb.value;
   jvmArgs.value = s.jvmArgs ?? '';
   skipJavaCheckDefault.value = !!s.skipJavaCheckDefault;
   envVars.value = s.envVars ?? '';
@@ -119,12 +121,15 @@ async function loadSettings() {
 const hasPendingChanges = computed(() => {
   const o = original.value;
   if (!o) return false;
+  const hadMemoryOverride = o.defaultMemoryMb != null || o.defaultMinMemoryMb != null;
   return (
     windowWidth.value !== (o.windowWidth ?? 925) ||
     windowHeight.value !== (o.windowHeight ?? 530) ||
     windowMaximized.value !== !!o.windowMaximized ||
-    defaultMemoryMb.value !== (o.defaultMemoryMb ?? recommendedMemoryMb.value) ||
-    defaultMinMemoryMb.value !== (o.defaultMinMemoryMb ?? recommendedMemoryMb.value) ||
+    memoryOverride.value !== hadMemoryOverride ||
+    (memoryOverride.value &&
+      (defaultMemoryMb.value !== (o.defaultMemoryMb ?? recommendedMemoryMb.value) ||
+        defaultMinMemoryMb.value !== (o.defaultMinMemoryMb ?? defaultMemoryMb.value))) ||
     jvmArgs.value.trim() !== (o.jvmArgs ?? '') ||
     skipJavaCheckDefault.value !== !!o.skipJavaCheckDefault ||
     envVars.value.trim() !== (o.envVars ?? '') ||
@@ -150,8 +155,8 @@ async function save() {
       windowWidth: windowWidth.value,
       windowHeight: windowHeight.value,
       windowMaximized: windowMaximized.value,
-      defaultMemoryMb: defaultMemoryMb.value,
-      defaultMinMemoryMb: defaultMinMemoryMb.value,
+      defaultMemoryMb: memoryOverride.value ? defaultMemoryMb.value : null,
+      defaultMinMemoryMb: memoryOverride.value ? defaultMinMemoryMb.value : null,
       jvmArgs: jvmArgs.value.trim() || null,
       skipJavaCheckDefault: skipJavaCheckDefault.value,
       envVars: envVars.value.trim() || null,
@@ -540,26 +545,34 @@ onBeforeUnmount(() => {
           <h4>{{ t('instances.sectionMemory') }}</h4>
           <p class="hint">{{ t('settings.globalMemoryHint') }}</p>
 
-          <label class="field-label settings-field-label" for="settings-memory-max">{{ t('instances.maxMemoryLabel') }}</label>
-          <div class="slider-row">
-            <input type="range" min="512" max="16384" step="256" v-model.number="defaultMemoryMb" />
-            <div class="slider-num-wrap">
-              <input id="settings-memory-max" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="defaultMemoryMb" />
-              <span class="slider-num-suffix">MB</span>
-            </div>
-          </div>
-          <p class="hint">{{ t('instances.memoryGbEquivalent', { gb: defaultMemoryLabel }) }}</p>
+          <label class="checkbox-row">
+            <input type="checkbox" v-model="memoryOverride" />
+            {{ t('settings.memoryOverride') }}
+          </label>
 
-          <label class="field-label settings-field-label" for="settings-memory-min">{{ t('instances.minMemoryLabel') }}</label>
-          <div class="slider-row">
-            <input type="range" min="512" max="16384" step="256" v-model.number="defaultMinMemoryMb" />
-            <div class="slider-num-wrap">
-              <input id="settings-memory-min" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="defaultMinMemoryMb" />
-              <span class="slider-num-suffix">MB</span>
+          <template v-if="memoryOverride">
+            <label class="field-label settings-field-label" for="settings-memory-max">{{ t('instances.maxMemoryLabel') }}</label>
+            <div class="slider-row">
+              <input type="range" min="512" max="16384" step="256" v-model.number="defaultMemoryMb" />
+              <div class="slider-num-wrap">
+                <input id="settings-memory-max" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="defaultMemoryMb" />
+                <span class="slider-num-suffix">MB</span>
+              </div>
             </div>
-          </div>
-          <p class="hint">{{ t('instances.minMemoryHint') }}</p>
-          <p v-if="memoryTooLow" class="java-warning">{{ t('instances.memoryTooLow') }}</p>
+            <p class="hint">{{ t('instances.memoryGbEquivalent', { gb: defaultMemoryLabel }) }}</p>
+
+            <label class="field-label settings-field-label" for="settings-memory-min">{{ t('instances.minMemoryLabel') }}</label>
+            <div class="slider-row">
+              <input type="range" min="512" max="16384" step="256" v-model.number="defaultMinMemoryMb" />
+              <div class="slider-num-wrap">
+                <input id="settings-memory-min" type="number" class="slider-num" min="512" max="65536" step="1" v-model.number="defaultMinMemoryMb" />
+                <span class="slider-num-suffix">MB</span>
+              </div>
+            </div>
+            <p class="hint">{{ t('instances.minMemoryHint') }}</p>
+            <p v-if="memoryTooLow" class="java-warning">{{ t('instances.memoryTooLow') }}</p>
+          </template>
+          <p v-else class="hint">{{ t('settings.memoryRecommended', { mb: recommendedMemoryMb }) }}</p>
         </div>
 
         <div v-else-if="active === 'java'" class="field-group">

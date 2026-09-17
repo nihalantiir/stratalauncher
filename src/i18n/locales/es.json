@@ -407,6 +407,8 @@
     "minecraftGroupLabel": "Minecraft",
     "globalWindowHint": "El valor predeterminado para las instancias que no definen su propio tamaño.",
     "globalMemoryHint": "El valor predeterminado para las instancias que no definen su propia memoria.",
+    "memoryOverride": "Establecer un valor predeterminado personalizado",
+    "memoryRecommended": "Usando la cantidad recomendada para este sistema: {mb} MB.",
     "globalJvmArgsHint": "Se añaden a cada inicio, además de lo que defina cada instancia.",
     "behaviorHeading": "Comportamiento del launcher",
     "launcherBehaviorLabel": "Mientras el juego se ejecuta",

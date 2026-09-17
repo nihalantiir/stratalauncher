@@ -407,6 +407,8 @@
     "minecraftGroupLabel": "Minecraft",
     "globalWindowHint": "Wartość domyślna dla instancji, które nie ustawiają własnego rozmiaru.",
     "globalMemoryHint": "Wartość domyślna dla instancji, które nie ustawiają własnej pamięci.",
+    "memoryOverride": "Ustaw własną wartość domyślną",
+    "memoryRecommended": "Używana jest zalecana dla tego systemu ilość: {mb} MB.",
     "globalJvmArgsHint": "Dodawane do każdego uruchomienia, oprócz tego, co ustawi dana instancja.",
     "behaviorHeading": "Zachowanie launchera",
     "launcherBehaviorLabel": "Podczas działania gry",
