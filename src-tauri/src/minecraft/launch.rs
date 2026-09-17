@@ -5,6 +5,20 @@ use std::path::{Path, PathBuf};
 use std::process::Command as StdCommand;
 use tokio::process::{Child, Command};
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+/// Suppresses a console window a spawned CLI tool would otherwise get,
+/// since Strata itself has none of its own for it to inherit.
+#[cfg(windows)]
+fn no_window(cmd: &mut StdCommand) -> &mut StdCommand {
+    cmd.creation_flags(0x0800_0000)
+}
+#[cfg(not(windows))]
+fn no_window(cmd: &mut StdCommand) -> &mut StdCommand {
+    cmd
+}
+
 pub struct LaunchSession {
     pub username: String,
     /// Undashed 32-hex UUID, matching what the vanilla client expects.
@@ -278,7 +292,7 @@ pub fn find_java() -> AppResult<PathBuf> {
         }
     }
 
-    let probe = StdCommand::new(exe_name).arg("-version").output();
+    let probe = no_window(StdCommand::new(exe_name).arg("-version")).output();
     if let Ok(output) = probe {
         if output.status.success() || !output.stderr.is_empty() {
             crate::launcher_log::info("java", format!("Using '{exe_name}' resolved from PATH"));
@@ -295,8 +309,7 @@ pub fn find_java() -> AppResult<PathBuf> {
 /// Runs `<path> -version` and parses the major version out of its output;
 /// handles both the legacy `1.8.0_401` and modern `17.0.15` schemes.
 pub fn probe_java_major_version(java_path: &Path) -> AppResult<u32> {
-    let output = StdCommand::new(java_path)
-        .arg("-version")
+    let output = no_window(StdCommand::new(java_path).arg("-version"))
         .output()
         .map_err(|e| AppError::Launch(format!("Couldn't run '{}': {e}", java_path.display())))?;
     let text = String::from_utf8_lossy(&output.stderr);
