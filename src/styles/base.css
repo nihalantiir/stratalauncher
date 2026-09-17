@@ -2469,6 +2469,10 @@ input[type='range'] {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
   transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) ease;
   animation: fade-in-up var(--dur-slow) var(--ease-out) backwards;
+  /* Same reasoning as .row-card: a large world list shouldn't pay for
+     off-screen rows. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 74px;
 }
 .world-row:hover {
   will-change: transform;
@@ -2739,6 +2743,10 @@ input[type='range'] {
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
   transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
   animation: fade-in-up var(--dur-slow) var(--ease-out) backwards;
+  /* Skips paint/layout for offscreen cards; a screenshot grid can have
+     hundreds of full-resolution PNGs, each expensive to keep decoded. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 160px;
 }
 .screenshot-card:hover,
 .screenshot-card:focus-visible {
