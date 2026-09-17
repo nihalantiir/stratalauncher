@@ -269,12 +269,12 @@ button {
   inset: 0 auto 0 0;
   width: 64px;
   z-index: 10;
-  background: var(--surface);
-  /* Large always-visible panel: a lighter blur here is visually
-     indistinguishable from the stronger one but costs meaningfully less to
-     recompute every frame, since backdrop-filter cost scales with area. */
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  /* No backdrop-filter, unlike .topbar (see the note on .panel): the
+     sidebar's own width animates on every hover, and unlike a static panel,
+     an active blur layer whose bounds change forces a real recompute on
+     every single animation frame, repeatedly, for as long as the user keeps
+     hovering across it. Solid background avoids that cost entirely. */
+  background: var(--surface-strong);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
