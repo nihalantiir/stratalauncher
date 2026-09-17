@@ -9,13 +9,17 @@ import AppTooltip from './components/common/AppTooltip.vue';
 import { useInstancesStore } from './stores/instances';
 import { useAccountsStore } from './stores/accounts';
 import { useVersionsStore } from './stores/versions';
+import { useNotificationsStore } from './stores/notifications';
+import { getAppSettings } from './api/appSettings';
 
 const instances = useInstancesStore();
 const accounts = useAccountsStore();
 const versions = useVersionsStore();
+const notifications = useNotificationsStore();
 const showWizard = ref(false);
 
 const ONBOARDED_KEY = 'strata-onboarded';
+let syncCheckHandle = null;
 
 onMounted(async () => {
   instances.initRunningTracking();
@@ -24,6 +28,14 @@ onMounted(async () => {
   // booting on any other route would otherwise leave these stores empty.
   instances.refresh();
   if (!versions.manifest) versions.fetch();
+
+  // Minecraft/loader/launcher updates and outdated mods/resourcepacks/
+  // shaders across every instance: checked once now, then on the user's
+  // configured interval so a long session still picks up new ones.
+  notifications.runSyncCheck();
+  const settings = await getAppSettings().catch(() => null);
+  const intervalMs = (settings?.updateCheckIntervalHours ?? 24) * 60 * 60 * 1000;
+  syncCheckHandle = setInterval(() => notifications.runSyncCheck(), intervalMs);
 
   let onboarded = false;
   try {
@@ -35,6 +47,7 @@ onMounted(async () => {
   await accounts.refresh();
   if (!onboarded && accounts.accounts.length === 0) showWizard.value = true;
 });
+onBeforeUnmount(() => clearInterval(syncCheckHandle));
 
 // This is desktop app chrome, not a web page, so the WebView2's native
 // right-click menu is suppressed globally as the fallback for any element without its own custom menu (see useContextMenu).

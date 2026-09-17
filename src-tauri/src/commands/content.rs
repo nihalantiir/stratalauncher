@@ -1,18 +1,12 @@
-use crate::content::{self, curseforge, modrinth, ContentKind, ContentSearchHit, ContentVersionEntry, InstalledItem, ResolvedVersion};
+use crate::content::{
+    self, curseforge, loader_facet, modrinth, ContentKind, ContentSearchHit, ContentVersionEntry, InstalledItem, ResolvedVersion,
+};
 use crate::db::InstancesRepo;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 use futures_util::StreamExt;
 use serde::Serialize;
 use tauri::State;
-
-fn loader_facet(kind: ContentKind, loader: &str) -> Option<String> {
-    if kind == ContentKind::Mod && loader != "vanilla" {
-        Some(loader.to_string())
-    } else {
-        None
-    }
-}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

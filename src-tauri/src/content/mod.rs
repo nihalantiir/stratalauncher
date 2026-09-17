@@ -56,6 +56,16 @@ pub struct ContentVersionEntry {
     pub sha1: Option<String>,
 }
 
+/// Only mods carry a loader facet on Modrinth/CurseForge; resourcepacks and
+/// shaders aren't loader-specific and would just get zero results filtered by one.
+pub fn loader_facet(kind: ContentKind, loader: &str) -> Option<String> {
+    if kind == ContentKind::Mod && loader != "vanilla" {
+        Some(loader.to_string())
+    } else {
+        None
+    }
+}
+
 const DISABLED_SUFFIX: &str = ".disabled";
 const METADATA_FILE: &str = ".strata-content.json";
 

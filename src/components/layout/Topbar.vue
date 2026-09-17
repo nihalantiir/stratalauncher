@@ -65,7 +65,7 @@ async function goToNotification(n) {
   notifOpen.value = false;
   if (n.instanceId) {
     await instances.setCurrent(n.instanceId);
-    router.push('/version');
+    router.push(n.route || '/version');
   } else if (n.url) {
     openUrl(n.url);
   }
@@ -76,7 +76,7 @@ function notifKind(n) {
   if (n.id.startsWith('mc-release')) return 'release';
   if (n.id.startsWith('mc-snapshot')) return 'snapshot';
   if (n.id.startsWith('loader-')) return 'loader';
-  if (n.id.startsWith('launcher-update')) return 'update';
+  if (n.id.startsWith('launcher-update') || n.id.startsWith('content-')) return 'update';
   return 'info';
 }
 

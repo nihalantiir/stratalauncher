@@ -1,6 +1,7 @@
 //! Background version-sync: diffs Mojang's manifest, each in-use loader's
 //! feed, and the launcher's release feed against what was last seen.
 
+use crate::content::{self, curseforge, modrinth, ContentKind};
 use crate::db::models::Instance;
 use crate::error::AppResult;
 use crate::minecraft::{loaders, manifest};
@@ -17,6 +18,10 @@ pub struct Notification {
     pub created_at: String,
     pub instance_id: Option<String>,
     pub url: Option<String>,
+    /// In-app route to open on click (e.g. "/mods"); takes priority over the
+    /// generic instance_id -> "/version" fallback when set.
+    #[serde(default)]
+    pub route: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -86,6 +91,7 @@ async fn check_mc_versions(client: &reqwest::Client, state: &mut SyncState, now:
                     created_at: now.to_string(),
                     instance_id: None,
                     url: None,
+                    route: None,
                 },
             );
         }
@@ -105,6 +111,7 @@ async fn check_mc_versions(client: &reqwest::Client, state: &mut SyncState, now:
                     created_at: now.to_string(),
                     instance_id: None,
                     url: None,
+                    route: None,
                 },
             );
         }
@@ -144,6 +151,7 @@ async fn check_loader_versions(client: &reqwest::Client, instances: &[Instance],
                         created_at: now.to_string(),
                         instance_id: Some(instance_id.clone()),
                         url: None,
+                        route: None,
                     },
                 );
             }
@@ -195,9 +203,68 @@ async fn check_launcher_update_inner(client: &reqwest::Client, state: &mut SyncS
             created_at: now.to_string(),
             instance_id: None,
             url: Some(format!("https://github.com/{repo}/releases/tag/v{}", info.version)),
+            route: None,
         },
     );
     state.last_seen_launcher_version = Some(info.version);
+}
+
+const CONTENT_KINDS: [(ContentKind, &str); 3] = [(ContentKind::Mod, "/mods"), (ContentKind::Resourcepack, "/resourcepacks"), (ContentKind::Shader, "/shaders")];
+
+/// Same per-item resolution `check_content_updates` (the on-demand command)
+/// uses, run across every instance instead of just the one currently open,
+/// so an update surfaces as a notification without visiting each content page.
+async fn check_content_updates(client: &reqwest::Client, instances: &[Instance], state: &mut SyncState, now: &str) {
+    use futures_util::StreamExt;
+    const MAX_CONCURRENT: usize = 6;
+
+    for instance in instances {
+        let instance_dir = crate::paths::instance_dir(&instance.id);
+        let legacy = content::is_legacy_texturepacks(&instance.mc_version);
+
+        for (kind, route) in CONTENT_KINDS {
+            let loader = content::loader_facet(kind, &instance.loader);
+            let Ok(installed) = content::list_installed(&instance_dir, kind, legacy) else { continue };
+
+            let found = futures_util::stream::iter(installed.into_iter().map(|item| {
+                let loader = loader.clone();
+                async move {
+                    let project_id = item.project_id?;
+                    let latest = match item.source.as_deref() {
+                        Some("curseforge") => {
+                            let api_key = crate::config::curseforge_api_key()?;
+                            curseforge::latest_matching_version(client, &api_key, &project_id, Some(&instance.mc_version), loader.as_deref()).await
+                        }
+                        _ => modrinth::latest_matching_version(client, &project_id, Some(&instance.mc_version), loader.as_deref()).await,
+                    };
+                    let latest = latest.ok().flatten()?;
+                    if Some(latest.version_id.clone()) == item.version_id {
+                        return None;
+                    }
+                    Some((item.filename, item.title, latest.version_id, latest.version_number))
+                }
+            }))
+            .buffer_unordered(MAX_CONCURRENT)
+            .filter_map(|result| async move { result })
+            .collect::<Vec<_>>()
+            .await;
+
+            for (filename, title, latest_version_id, latest_version_number) in found {
+                push_notification(
+                    state,
+                    Notification {
+                        id: format!("content-{}-{filename}-{latest_version_id}", instance.id),
+                        title: format!("Update for {title}"),
+                        body: format!("{latest_version_number} is available for {}.", instance.name),
+                        created_at: now.to_string(),
+                        instance_id: Some(instance.id.clone()),
+                        url: None,
+                        route: Some(route.to_string()),
+                    },
+                );
+            }
+        }
+    }
 }
 
 /// Runs every check and persists the result; the first run just seeds the
@@ -208,6 +275,7 @@ pub async fn run_sync_check(client: &reqwest::Client, instances: &[Instance], ch
 
     check_mc_versions(client, &mut state, &now).await;
     check_loader_versions(client, instances, &mut state, &now).await;
+    check_content_updates(client, instances, &mut state, &now).await;
     if check_updates {
         check_launcher_update_inner(client, &mut state, &now).await;
         state.last_update_check_at = Some(now);
