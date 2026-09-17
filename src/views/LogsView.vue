@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick, onMounted, onActivated, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, onActivated, onDeactivated, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -28,6 +28,7 @@ const uploading = ref(false);
 const uploadedUrl = ref(null);
 const insights = ref(null);
 const panelEl = ref(null);
+const stickToBottom = ref(true);
 
 const instanceId = computed(() => instances.current?.id);
 
@@ -87,11 +88,14 @@ async function refreshFileList() {
   }
 }
 
-async function refreshLines() {
-  loading.value = true;
-  error.value = null;
-  uploadedUrl.value = null;
-  insights.value = null;
+async function refreshLines(silent = false) {
+  if (!silent) {
+    loading.value = true;
+    error.value = null;
+    uploadedUrl.value = null;
+    insights.value = null;
+  }
+  stickToBottom.value = !panelEl.value || panelEl.value.scrollHeight - panelEl.value.scrollTop - panelEl.value.clientHeight < 80;
   try {
     if (!selectedFile.value) {
       lines.value = [];
@@ -101,9 +105,9 @@ async function refreshLines() {
       lines.value = await api.readLauncherLog(selectedFile.value);
     }
   } catch (e) {
-    error.value = String(e);
+    if (!silent) error.value = String(e);
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
 }
 
@@ -118,18 +122,40 @@ async function refreshAll() {
   await refreshLines();
 }
 
-onMounted(refreshAll);
+onMounted(async () => {
+  await refreshAll();
+  startPolling();
+});
 watch(instanceId, refreshAll);
-watch(selectedFile, refreshLines);
+watch(selectedFile, () => refreshLines());
 // A freshly loaded log's most relevant content (a crash, the latest
 // activity) is almost always at the end, not the start.
 watch(lines, async () => {
   await nextTick();
-  if (panelEl.value) panelEl.value.scrollTop = panelEl.value.scrollHeight;
+  if (panelEl.value && stickToBottom.value) panelEl.value.scrollTop = panelEl.value.scrollHeight;
 });
 // Kept alive across navigation (see App.vue); a play session between visits
 // changes the log file's content without changing instanceId or selectedFile, so re-read on every return visit instead of relying on the watchers above.
-onActivated(refreshAll);
+onActivated(() => {
+  refreshAll();
+  startPolling();
+});
+onDeactivated(stopPolling);
+
+// The Minecraft log file grows live while the game runs; poll it instead of
+// only re-reading on tab/file switches, so it actually updates on its own.
+const POLL_MS = 1500;
+let pollHandle = null;
+function startPolling() {
+  stopPolling();
+  pollHandle = setInterval(() => {
+    if (tab.value === 'minecraft' && instanceId.value && instances.isRunning(instanceId.value)) refreshLines(true);
+  }, POLL_MS);
+}
+function stopPolling() {
+  clearInterval(pollHandle);
+  pollHandle = null;
+}
 
 async function currentRawText() {
   if (!selectedFile.value) return '';
