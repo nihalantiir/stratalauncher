@@ -20,6 +20,12 @@ pub fn list_screenshots(instance_id: String, state: State<'_, AppState>) -> AppR
 }
 
 #[tauri::command]
+pub async fn ensure_screenshot_thumbnails(instance_id: String, state: State<'_, AppState>) -> AppResult<()> {
+    let dir = instance_dir_for(&state, &instance_id)?;
+    screenshots::ensure_thumbnails(&dir).await
+}
+
+#[tauri::command]
 pub fn delete_screenshot(instance_id: String, file_name: String, state: State<'_, AppState>) -> AppResult<()> {
     let dir = instance_dir_for(&state, &instance_id)?;
     screenshots::delete_screenshot(&dir, &file_name)

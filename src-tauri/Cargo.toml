@@ -41,6 +41,7 @@ zip = "8.6.0"
 flate2 = "1.0"
 tauri-plugin-dialog = "2.7.3"
 dotenvy = "0.15"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.60", features = ["Win32_System_SystemInformation"] }

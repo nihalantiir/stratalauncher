@@ -182,6 +182,7 @@ pub fn run() {
             commands::servers::list_servers,
             commands::servers::ping_server,
             commands::screenshots::list_screenshots,
+            commands::screenshots::ensure_screenshot_thumbnails,
             commands::screenshots::delete_screenshot,
             commands::screenshots::get_screenshots_dir,
             commands::logs::list_log_files,

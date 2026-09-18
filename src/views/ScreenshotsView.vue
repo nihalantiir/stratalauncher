@@ -31,7 +31,11 @@ async function refresh() {
   loading.value = true;
   error.value = null;
   try {
-    shots.value = await api.listScreenshots(instanceId.value);
+    const list = await api.listScreenshots(instanceId.value);
+    // Generates any thumbnails missing since the last refresh so the grid
+    // never points at a thumbnail file that doesn't exist yet.
+    await api.ensureScreenshotThumbnails(instanceId.value);
+    shots.value = list;
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -110,7 +114,7 @@ async function openScreenshotsFolder() {
 }
 
 function fileSrc(shot) {
-  return convertFileSrc(shot.path);
+  return convertFileSrc(shot.thumbPath);
 }
 
 function dateLabel(shot) {
