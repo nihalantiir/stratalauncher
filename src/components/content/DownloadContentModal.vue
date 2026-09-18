@@ -23,6 +23,9 @@ const currentInstance = computed(() => instances.list.find((i) => i.id === props
 
 const installingKey = ref(null);
 const installedKeys = ref(new Set(props.installedProjectIds.map((id) => `modrinth:${id}`)));
+// { title, extra: InstalledItem[] } for the "required libraries installed
+// too" popup, set right after an install that pulled in dependencies.
+const dependencyResult = ref(null);
 const curseforgeAvailable = ref(false);
 // A display-only filter over whatever's already been fetched, not a search
 // facet, so no re-fetch is needed when it's toggled.
@@ -84,7 +87,7 @@ async function install(hit) {
   installingKey.value = hitKey(hit);
   error.value = null;
   try {
-    const item = await api.installContent(
+    const result = await api.installContent(
       props.instanceId,
       props.kind,
       hit.source,
@@ -94,7 +97,10 @@ async function install(hit) {
       selectedVersion.value,
     );
     installedKeys.value.add(hitKey(hit));
-    emit('installed', item);
+    emit('installed', result.item);
+    if (result.extraInstalled?.length) {
+      dependencyResult.value = { title: hit.title, extra: result.extraInstalled };
+    }
   } catch (e) {
     error.value = String(e);
   } finally {
@@ -253,5 +259,27 @@ function sideLabel(hit) {
       </div>
     </div>
   </div>
+  </Teleport>
+
+  <Teleport to="body">
+    <div v-if="dependencyResult" class="modal-backdrop" @click.self="dependencyResult = null">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>{{ t('content.dependenciesInstalledTitle') }}</h3>
+          <button class="modal-close" type="button" @click="dependencyResult = null">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin: 0 0 10px">
+            {{ t('content.dependenciesInstalledBody', { title: dependencyResult.title, count: dependencyResult.extra.length }) }}
+          </p>
+          <ul class="dependency-list">
+            <li v-for="dep in dependencyResult.extra" :key="dep.filename">{{ dep.title }}</li>
+          </ul>
+          <button class="btn btn-mineral btn-block" type="button" style="margin-top: 16px" @click="dependencyResult = null">
+            {{ t('content.close') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </Teleport>
 </template>

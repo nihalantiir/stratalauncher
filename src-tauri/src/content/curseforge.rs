@@ -330,6 +330,13 @@ struct FilesResponse {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct RawFileDependency {
+    mod_id: i64,
+    relation_type: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct RawFile {
     id: i64,
     #[serde(default)]
@@ -346,7 +353,13 @@ struct RawFile {
     game_versions: Vec<String>,
     #[serde(default)]
     release_type: i64,
+    #[serde(default)]
+    dependencies: Vec<RawFileDependency>,
 }
+
+/// CurseForge's `FileRelationType` enum; 3 is the only one that means
+/// "install this too or the mod won't work."
+const REQUIRED_DEPENDENCY: i64 = 3;
 
 /// CurseForge's `FileReleaseType` enum.
 fn release_type_label(release_type: i64) -> &'static str {
@@ -405,6 +418,12 @@ pub async fn latest_matching_version(
     // guess just leaves sha1 None and download_verified() skips the check.
     let sha1 = top.hashes.iter().find(|h| h.algo == 1).map(|h| h.value.clone());
     let file_url = top.download_url.expect("filtered to Some above");
+    let dependency_project_ids = top
+        .dependencies
+        .iter()
+        .filter(|d| d.relation_type == REQUIRED_DEPENDENCY)
+        .map(|d| d.mod_id.to_string())
+        .collect();
 
     Ok(Some(ResolvedVersion {
         version_id: top.id.to_string(),
@@ -412,6 +431,7 @@ pub async fn latest_matching_version(
         file_url,
         filename: top.file_name,
         sha1,
+        dependency_project_ids,
     }))
 }
 

@@ -289,7 +289,10 @@
     "hideInstalledLabel": "Ukryj zainstalowane",
     "sideClient": "Po stronie klienta",
     "sideServer": "Po stronie serwera",
-    "sideBoth": "Klient i serwer"
+    "sideBoth": "Klient i serwer",
+    "dependenciesInstalledTitle": "Zainstalowano wymagane biblioteki",
+    "dependenciesInstalledBody": "{title} potrzebował {count} innych modów do działania, więc też zostały zainstalowane:",
+    "close": "Zamknij"
   },
   "worlds": {
     "intro": "Zapisy należące do bieżącej instancji.",

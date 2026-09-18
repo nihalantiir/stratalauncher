@@ -289,7 +289,10 @@
     "hideInstalledLabel": "Masquer les installés",
     "sideClient": "Côté client",
     "sideServer": "Côté serveur",
-    "sideBoth": "Client et serveur"
+    "sideBoth": "Client et serveur",
+    "dependenciesInstalledTitle": "Bibliothèques requises installées",
+    "dependenciesInstalledBody": "{title} avait besoin de {count} autre(s) mod(s) pour fonctionner, ils ont donc aussi été installés :",
+    "close": "Fermer"
   },
   "worlds": {
     "intro": "Sauvegardes appartenant à l'instance actuelle.",

@@ -159,11 +159,19 @@ struct VersionHashes {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+struct RawDependency {
+    project_id: Option<String>,
+    dependency_type: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 struct RawVersion {
     id: String,
     version_number: String,
     date_published: String,
     files: Vec<VersionFile>,
+    #[serde(default)]
+    dependencies: Vec<RawDependency>,
 }
 
 /// The newest published version matching this instance's version/loader;
@@ -205,12 +213,20 @@ pub async fn latest_matching_version(
         .or_else(|| top.files.first())
         .ok_or_else(|| AppError::Other(format!("Modrinth version {} has no files", top.id)))?;
 
+    let dependency_project_ids = top
+        .dependencies
+        .iter()
+        .filter(|d| d.dependency_type == "required")
+        .filter_map(|d| d.project_id.clone())
+        .collect();
+
     Ok(Some(ResolvedVersion {
         version_id: top.id,
         version_number: top.version_number,
         file_url: file.url.clone(),
         filename: file.filename.clone(),
         sha1: file.hashes.sha1.clone(),
+        dependency_project_ids,
     }))
 }
 

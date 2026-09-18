@@ -14,6 +14,8 @@ pub struct ResolvedVersion {
     pub file_url: String,
     pub filename: String,
     pub sha1: Option<String>,
+    /// Other projects this file declares as required to run, same source.
+    pub dependency_project_ids: Vec<String>,
 }
 
 /// A search result annotated with which source it came from; the source

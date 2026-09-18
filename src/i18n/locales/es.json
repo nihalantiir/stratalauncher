@@ -289,7 +289,10 @@
     "hideInstalledLabel": "Ocultar instalados",
     "sideClient": "Del lado del cliente",
     "sideServer": "Del lado del servidor",
-    "sideBoth": "Cliente y servidor"
+    "sideBoth": "Cliente y servidor",
+    "dependenciesInstalledTitle": "Bibliotecas necesarias instaladas",
+    "dependenciesInstalledBody": "{title} necesitaba {count} otro(s) mod(s) para funcionar, así que también se instalaron:",
+    "close": "Cerrar"
   },
   "worlds": {
     "intro": "Partidas guardadas que pertenecen a la instancia actual.",

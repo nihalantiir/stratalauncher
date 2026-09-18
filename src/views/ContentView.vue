@@ -122,7 +122,7 @@ async function remove(item) {
 }
 
 async function performUpdate(item) {
-  const newItem = await api.installContent(
+  const result = await api.installContent(
     instanceId.value,
     props.kind,
     item.source ?? 'modrinth',
@@ -131,7 +131,7 @@ async function performUpdate(item) {
     item.iconUrl,
     instances.current.mcVersion,
   );
-  if (newItem.filename !== item.filename) {
+  if (result.item.filename !== item.filename) {
     await api.removeContent(instanceId.value, props.kind, item.filename);
   }
 }

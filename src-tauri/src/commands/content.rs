@@ -199,6 +199,65 @@ async fn install_resolved(
         .ok_or_else(|| AppError::Other("installed item vanished".into()))
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstallOutcome {
+    pub item: InstalledItem,
+    /// Other required libraries this install pulled in automatically, so
+    /// the UI can tell the user why more than one file just appeared.
+    pub extra_installed: Vec<InstalledItem>,
+}
+
+/// Installs any of `dependency_project_ids` not already present for this
+/// instance, and recurses into their own required dependencies. A dependency
+/// that fails to resolve is skipped rather than failing the whole install.
+async fn install_dependencies(
+    state: &State<'_, AppState>,
+    instance_id: &str,
+    kind: ContentKind,
+    source: &str,
+    mc_version: &str,
+    loader: Option<&str>,
+    dependency_project_ids: Vec<String>,
+) -> AppResult<Vec<InstalledItem>> {
+    const MAX_EXTRA: usize = 25;
+    let legacy = content::is_legacy_texturepacks(mc_version);
+    let instance_dir = crate::paths::instance_dir(instance_id);
+
+    let mut extra = Vec::new();
+    let mut queue = dependency_project_ids;
+    let mut seen = std::collections::HashSet::new();
+
+    while let Some(project_id) = queue.pop() {
+        if extra.len() >= MAX_EXTRA || !seen.insert(project_id.clone()) {
+            continue;
+        }
+        let already_installed = content::list_installed(&instance_dir, kind, legacy)?
+            .iter()
+            .any(|i| i.project_id.as_deref() == Some(project_id.as_str()));
+        if already_installed {
+            continue;
+        }
+
+        let resolved = match source {
+            "curseforge" => match crate::config::curseforge_api_key() {
+                Some(api_key) => curseforge::latest_matching_version(&state.http, &api_key, &project_id, Some(mc_version), loader).await,
+                None => continue,
+            },
+            _ => modrinth::latest_matching_version(&state.http, &project_id, Some(mc_version), loader).await,
+        };
+        let Ok(Some(resolved)) = resolved else { continue };
+
+        queue.extend(resolved.dependency_project_ids.clone());
+        let title = resolved.filename.trim_end_matches(".jar").to_string();
+        if let Ok(item) = install_resolved(state, instance_id, kind, resolved, &project_id, &title, None, source).await {
+            extra.push(item);
+        }
+    }
+
+    Ok(extra)
+}
+
 #[tauri::command]
 pub async fn install_content(
     state: State<'_, AppState>,
@@ -209,7 +268,7 @@ pub async fn install_content(
     title: String,
     icon_url: Option<String>,
     mc_version: String,
-) -> AppResult<InstalledItem> {
+) -> AppResult<InstallOutcome> {
     let instance = get_instance(&state, &instance_id)?;
     let loader = loader_facet(kind, &instance.loader);
     let installing_for_other_version = mc_version != instance.mc_version;
@@ -231,7 +290,12 @@ pub async fn install_content(
         })
     })?;
 
-    install_resolved(&state, &instance_id, kind, resolved, &project_id, &title, icon_url.as_deref(), &source).await
+    let dependency_project_ids = resolved.dependency_project_ids.clone();
+    let item = install_resolved(&state, &instance_id, kind, resolved, &project_id, &title, icon_url.as_deref(), &source).await?;
+    let extra_installed =
+        install_dependencies(&state, &instance_id, kind, &source, &mc_version, loader.as_deref(), dependency_project_ids).await?;
+
+    Ok(InstallOutcome { item, extra_installed })
 }
 
 /// Installs an exact version from the "Change Version" list; no
@@ -253,6 +317,9 @@ pub async fn install_content_version(
         file_url: version.file_url,
         filename: version.filename,
         sha1: version.sha1,
+        // The version picker doesn't carry dependency data; a required
+        // dependency the instance is missing is caught on its own install.
+        dependency_project_ids: Vec::new(),
     };
     install_resolved(&state, &instance_id, kind, resolved, &project_id, &title, icon_url.as_deref(), &source).await
 }

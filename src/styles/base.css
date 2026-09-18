@@ -1509,6 +1509,17 @@ button {
 .downloader-modal {
   max-width: 920px;
 }
+.dependency-list {
+  margin: 0;
+  padding-left: 18px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.dependency-list li {
+  padding: 2px 0;
+}
 .downloader-body {
   padding: 0;
   overflow: hidden;
