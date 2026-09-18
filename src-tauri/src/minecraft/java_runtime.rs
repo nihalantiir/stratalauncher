@@ -95,7 +95,7 @@ pub async fn ensure_runtime(app: &AppHandle, client: &reqwest::Client, component
         }
     }
 
-    let file_jobs: Vec<(String, PathBuf, Option<String>, bool)> = files
+    let file_jobs: Vec<(String, PathBuf, Option<String>, Option<u64>, bool)> = files
         .iter()
         .filter_map(|(rel_path, meta)| {
             if meta.get("type").and_then(|v| v.as_str()) != Some("file") {
@@ -104,8 +104,9 @@ pub async fn ensure_runtime(app: &AppHandle, client: &reqwest::Client, component
             let raw = meta.pointer("/downloads/raw")?;
             let url = raw.get("url").and_then(|v| v.as_str())?.to_string();
             let sha1 = raw.get("sha1").and_then(|v| v.as_str()).map(str::to_string);
+            let size = raw.get("size").and_then(|v| v.as_u64());
             let executable = meta.get("executable").and_then(|v| v.as_bool()).unwrap_or(false);
-            Some((url, dir.join(rel_path), sha1, executable))
+            Some((url, dir.join(rel_path), sha1, size, executable))
         })
         .collect();
 
@@ -113,7 +114,7 @@ pub async fn ensure_runtime(app: &AppHandle, client: &reqwest::Client, component
     let completed = std::sync::atomic::AtomicUsize::new(0);
     let component_owned = component.to_string();
 
-    let results = futures_util::stream::iter(file_jobs.into_iter().map(|(url, dest, sha1, executable)| {
+    let results = futures_util::stream::iter(file_jobs.into_iter().map(|(url, dest, sha1, size, executable)| {
         let client = client.clone();
         let completed = &completed;
         let app = app;
@@ -122,7 +123,7 @@ pub async fn ensure_runtime(app: &AppHandle, client: &reqwest::Client, component
             if let Some(parent) = dest.parent() {
                 std::fs::create_dir_all(parent)?;
             }
-            super::download::download_verified(&client, &url, &dest, sha1.as_deref()).await?;
+            super::download::download_verified(&client, &url, &dest, sha1.as_deref(), size).await?;
             set_executable(&dest, executable)?;
             let n = completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
             app.emit(

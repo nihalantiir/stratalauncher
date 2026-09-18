@@ -178,7 +178,7 @@ async fn install_resolved(
     std::fs::create_dir_all(&dest_dir)?;
     let dest = dest_dir.join(&resolved.filename);
 
-    crate::minecraft::download::download_verified(&state.http, &resolved.file_url, &dest, resolved.sha1.as_deref())
+    crate::minecraft::download::download_verified(&state.http, &resolved.file_url, &dest, resolved.sha1.as_deref(), None)
         .await?;
 
     content::record_install(

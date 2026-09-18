@@ -101,7 +101,7 @@ pub async fn install(
         let dest_dir = instance_dir.join(kind.folder(legacy));
         std::fs::create_dir_all(&dest_dir)?;
         let dest = dest_dir.join(&file.file_name);
-        download::download_verified(client, &file.download_url, &dest, file.sha1.as_deref()).await?;
+        download::download_verified(client, &file.download_url, &dest, file.sha1.as_deref(), None).await?;
         download::emit_progress(app, "modpack", i + 1, total);
     }
 

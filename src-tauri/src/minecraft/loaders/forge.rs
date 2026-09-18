@@ -288,7 +288,7 @@ pub async fn ensure_installed(
     let url = installer_url(loader, mc_version, loader_version);
 
     crate::launcher_log::info(loader, format!("Downloading installer: {url}"));
-    super::super::download::download_verified(client, &url, &installer_path, None).await?;
+    super::super::download::download_verified(client, &url, &installer_path, None, None).await?;
 
     let java_path = super::super::launch::find_java()?;
 

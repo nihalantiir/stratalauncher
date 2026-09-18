@@ -88,7 +88,7 @@ pub async fn install(app: &AppHandle, client: &reqwest::Client, zip_path: &Path,
     for (i, file) in wanted.into_iter().enumerate() {
         let dest = crate::fsutil::safe_join(instance_dir, &file.path, "modpack archive")?;
         let Some(url) = file.downloads.first() else { continue };
-        download::download_verified(client, url, &dest, file.hashes.sha1.as_deref()).await?;
+        download::download_verified(client, url, &dest, file.hashes.sha1.as_deref(), None).await?;
         download::emit_progress(app, "modpack", i + 1, total);
     }
 

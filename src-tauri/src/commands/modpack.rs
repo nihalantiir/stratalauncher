@@ -151,7 +151,7 @@ pub async fn install_modpack_version(
     group_name: Option<String>,
 ) -> AppResult<Instance> {
     let temp_path = std::env::temp_dir().join(format!("strata-modpack-{}.zip", uuid::Uuid::new_v4()));
-    crate::minecraft::download::download_verified(&state.http, &version.file_url, &temp_path, version.sha1.as_deref()).await?;
+    crate::minecraft::download::download_verified(&state.http, &version.file_url, &temp_path, version.sha1.as_deref(), None).await?;
 
     let result = create_and_install(&app, &state, &temp_path, name, group_name).await;
     std::fs::remove_file(&temp_path).ok();

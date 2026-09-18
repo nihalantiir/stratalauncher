@@ -44,7 +44,14 @@ fn sha1_hex(bytes: &[u8]) -> String {
     hex::encode(hasher.finalize())
 }
 
-async fn file_matches(path: &Path, expected_sha1: Option<&str>) -> bool {
+/// A cached file is trusted once its size matches, without re-reading and
+/// re-hashing its full contents; re-launching a vanilla instance was hashing
+/// thousands of already-good asset files every time, taking up to a minute.
+/// Falls back to a full hash check when the expected size isn't known.
+async fn file_matches(path: &Path, expected_sha1: Option<&str>, expected_size: Option<u64>) -> bool {
+    if let Some(size) = expected_size {
+        return tokio::fs::metadata(path).await.map(|m| m.len() == size).unwrap_or(false);
+    }
     let Ok(bytes) = tokio::fs::read(path).await else { return false };
     match expected_sha1 {
         Some(expected) => sha1_hex(&bytes).eq_ignore_ascii_case(expected),
@@ -59,8 +66,9 @@ pub(crate) async fn download_verified(
     url: &str,
     dest: &Path,
     expected_sha1: Option<&str>,
+    expected_size: Option<u64>,
 ) -> AppResult<()> {
-    if dest.exists() && file_matches(dest, expected_sha1).await {
+    if dest.exists() && file_matches(dest, expected_sha1, expected_size).await {
         return Ok(());
     }
     if let Some(parent) = dest.parent() {
@@ -96,8 +104,9 @@ pub async fn ensure_client_jar(
         .ok_or_else(|| AppError::Other("version JSON has no client download".into()))?;
     let url = download["url"].as_str().unwrap_or_default();
     let sha1 = download["sha1"].as_str();
+    let size = download["size"].as_u64();
 
-    download_verified(client, url, dest, sha1).await?;
+    download_verified(client, url, dest, sha1, size).await?;
     Ok(dest.to_path_buf())
 }
 
@@ -115,7 +124,7 @@ pub async fn ensure_libraries(
     let features = HashMap::new();
     let libraries = version_json["libraries"].as_array().cloned().unwrap_or_default();
 
-    let mut jobs: Vec<(String, Option<String>, PathBuf, bool)> = Vec::new(); // (url, sha1, dest, is_native)
+    let mut jobs: Vec<(String, Option<String>, Option<u64>, PathBuf, bool)> = Vec::new(); // (url, sha1, size, dest, is_native)
 
     for lib in &libraries {
         let rules = lib.get("rules").and_then(|r| r.as_array()).cloned();
@@ -128,6 +137,7 @@ pub async fn ensure_libraries(
                 jobs.push((
                     url.to_string(),
                     artifact["sha1"].as_str().map(str::to_string),
+                    artifact["size"].as_u64(),
                     libraries_dir.join(path),
                     false,
                 ));
@@ -148,6 +158,7 @@ pub async fn ensure_libraries(
                     jobs.push((
                         format!("{base}{path}"),
                         lib.get("sha1").and_then(|v| v.as_str()).map(str::to_string),
+                        None,
                         libraries_dir.join(path),
                         false,
                     ));
@@ -167,6 +178,7 @@ pub async fn ensure_libraries(
                         jobs.push((
                             url.to_string(),
                             classifier["sha1"].as_str().map(str::to_string),
+                            classifier["size"].as_u64(),
                             libraries_dir.join(path),
                             true,
                         ));
@@ -180,7 +192,7 @@ pub async fn ensure_libraries(
                             .and_then(|v| v.as_str())
                             .unwrap_or("https://libraries.minecraft.net/");
                         let base = if base.ends_with('/') { base.to_string() } else { format!("{base}/") };
-                        jobs.push((format!("{base}{path}"), None, libraries_dir.join(path), true));
+                        jobs.push((format!("{base}{path}"), None, None, libraries_dir.join(path), true));
                     }
                 }
             }
@@ -191,11 +203,11 @@ pub async fn ensure_libraries(
     let completed = std::sync::atomic::AtomicUsize::new(0);
     let app_ref = app;
 
-    let results = futures_util::stream::iter(jobs.into_iter().map(|(url, sha1, dest, is_native)| {
+    let results = futures_util::stream::iter(jobs.into_iter().map(|(url, sha1, size, dest, is_native)| {
         let client = client.clone();
         let completed = &completed;
         async move {
-            download_verified(&client, &url, &dest, sha1.as_deref()).await?;
+            download_verified(&client, &url, &dest, sha1.as_deref(), size).await?;
             let n = completed.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
             emit_progress(app_ref, "libraries", n, total);
             Ok::<_, AppError>((dest, is_native))
@@ -231,9 +243,10 @@ pub async fn ensure_assets(
     let index_id = asset_index["id"].as_str().unwrap_or("legacy");
     let index_url = asset_index["url"].as_str().unwrap_or_default();
     let index_sha1 = asset_index["sha1"].as_str();
+    let index_size = asset_index["size"].as_u64();
 
     let index_path = assets_dir.join("indexes").join(format!("{index_id}.json"));
-    download_verified(client, index_url, &index_path, index_sha1).await?;
+    download_verified(client, index_url, &index_path, index_sha1, index_size).await?;
 
     let index_bytes = tokio::fs::read(&index_path).await?;
     let index_json: serde_json::Value = serde_json::from_slice(&index_bytes)?;
@@ -249,6 +262,7 @@ pub async fn ensure_assets(
 
     let jobs = objects.into_iter().map(|(name, meta)| {
         let hash = meta["hash"].as_str().unwrap_or_default().to_string();
+        let size = meta["size"].as_u64();
         let assets_dir = assets_dir.to_path_buf();
         let client = client.clone();
         let completed = &completed;
@@ -256,7 +270,7 @@ pub async fn ensure_assets(
             let prefix = &hash[0..2.min(hash.len())];
             let object_path = assets_dir.join("objects").join(prefix).join(&hash);
             let url = format!("{ASSETS_BASE_URL}/{prefix}/{hash}");
-            download_verified(&client, &url, &object_path, Some(&hash)).await?;
+            download_verified(&client, &url, &object_path, Some(&hash), size).await?;
 
             if is_virtual {
                 let virtual_path = assets_dir.join("virtual").join(index_id).join(&name);
@@ -308,4 +322,46 @@ pub fn extract_natives(native_jars: &[PathBuf], dest_dir: &Path) -> AppResult<()
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::file_matches;
+    use std::io::Write;
+
+    fn temp_file(contents: &[u8]) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!("strata-test-{}", uuid::Uuid::new_v4()));
+        std::fs::File::create(&path).unwrap().write_all(contents).unwrap();
+        path
+    }
+
+    #[tokio::test]
+    async fn size_match_skips_hashing_a_corrupt_file() {
+        // Same length as "hello", but not actually "hello"; the size-only
+        // fast path is expected to accept it anyway, unlike a real hash check.
+        let path = temp_file(b"hallo");
+        assert!(file_matches(&path, Some("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d"), Some(5)).await);
+        std::fs::remove_file(path).ok();
+    }
+
+    #[tokio::test]
+    async fn size_mismatch_fails_even_without_hashing() {
+        let path = temp_file(b"hello");
+        assert!(!file_matches(&path, None, Some(999)).await);
+        std::fs::remove_file(path).ok();
+    }
+
+    #[tokio::test]
+    async fn falls_back_to_a_real_hash_check_when_size_is_unknown() {
+        let path = temp_file(b"hello");
+        assert!(file_matches(&path, Some("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d"), None).await);
+        assert!(!file_matches(&path, Some("0000000000000000000000000000000000000"), None).await);
+        std::fs::remove_file(path).ok();
+    }
+
+    #[tokio::test]
+    async fn missing_file_never_matches() {
+        let path = std::env::temp_dir().join(format!("strata-test-missing-{}", uuid::Uuid::new_v4()));
+        assert!(!file_matches(&path, None, Some(5)).await);
+    }
 }
