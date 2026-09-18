@@ -140,11 +140,6 @@ pub async fn launch_instance(app: AppHandle, state: State<'_, AppState>, instanc
     let post_exit_cmds = outcome.post_exit_cmds;
     let pid = child.id();
 
-    {
-        let conn = state.db.0.lock().unwrap();
-        InstancesRepo::touch_last_played(&conn, &instance.id)?;
-    }
-
     if let Some(pid) = pid {
         state.running.lock().unwrap().insert(instance.id.clone(), pid);
     }
@@ -201,6 +196,9 @@ pub async fn launch_instance(app: AppHandle, state: State<'_, AppState>, instanc
         {
             let conn = app_state.db.0.lock().unwrap();
             let _ = InstancesRepo::set_last_crashed(&conn, &instance_id, crashed);
+            // "Last played" reflects when the session ended, not when it
+            // started, so it matches what the user actually did last.
+            let _ = InstancesRepo::touch_last_played(&conn, &instance_id);
         }
         app_for_task
             .emit(RUNNING_CHANGED_EVENT, RunningChanged { instance_id, running: false, crashed: Some(crashed) })
